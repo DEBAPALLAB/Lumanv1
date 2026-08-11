@@ -1,0 +1,275 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* BRUTALIST - Harsh, uncompromising */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
+
+    /* Brand - Pure black */
+    --primary: 0 0% 0%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 95%;
+    --secondary-foreground: 0 0% 0%;
+
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 40%;
+
+    /* Accent - Harsh yellow for emphasis */
+    --accent: 48 100% 50%;
+    --accent-foreground: 0 0% 0%;
+
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* UI Elements - THICK borders */
+    --border: 0 0% 0%;
+    --input: 0 0% 0%;
+    --ring: 0 0% 0%;
+
+    --radius: 0px;
+
+    /* Novel Highlights (DO NOT REMOVE) */
+    --novel-highlight-default: #ffffff;
+    --novel-highlight-purple: #f6f3f8;
+    --novel-highlight-red: #fdebeb;
+    --novel-highlight-yellow: #fbf4a2;
+    --novel-highlight-blue: #c1ecf9;
+    --novel-highlight-green: #acf79f;
+    --novel-highlight-orange: #faebdd;
+    --novel-highlight-pink: #faf1f5;
+    --novel-highlight-gray: #f1f1ef;
+  }
+
+  .dark {
+    /* Greyish dark mode - easier on the eyes */
+    --background: 0 0% 8%;
+    --foreground: 0 0% 95%;
+
+    --card: 0 0% 12%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 0 0% 90%;
+    --primary-foreground: 0 0% 10%;
+
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 95%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
+
+    /* Softer accent */
+    --accent: 48 90% 55%;
+    --accent-foreground: 0 0% 10%;
+
+    --destructive: 0 85% 55%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Softer borders */
+    --border: 0 0% 25%;
+    --input: 0 0% 25%;
+    --ring: 0 0% 80%;
+
+    /* Novel Highlights */
+    --novel-highlight-default: #1a1a1a;
+    --novel-highlight-purple: #3f2c4b;
+    --novel-highlight-red: #5c1a1a;
+    --novel-highlight-yellow: #5c4b1a;
+    --novel-highlight-blue: #1a3d5c;
+    --novel-highlight-green: #1a5c20;
+    --novel-highlight-orange: #5c3a1a;
+    --novel-highlight-pink: #5c1a3a;
+    --novel-highlight-gray: #3a3a3a;
+  }
+
+  /* --- Color Themes --- */
+
+  /* Green Theme */
+  .theme-green {
+    --primary: 142 71% 45%;
+    --primary-foreground: 144 100% 97%;
+    --ring: 142 71% 45%;
+  }
+  .dark .theme-green {
+    --primary: 142 70% 50%;
+    --primary-foreground: 144 100% 5%;
+    --ring: 142 70% 50%;
+  }
+
+  /* Violet Theme */
+  .theme-violet {
+    --primary: 262 83% 58%;
+    --primary-foreground: 210 40% 98%;
+    --ring: 262 83% 58%;
+  }
+  .dark .theme-violet {
+    --primary: 263 70% 50%;
+    --primary-foreground: 210 40% 98%;
+    --ring: 263 70% 50%;
+  }
+
+  /* Orange Theme */
+  .theme-orange {
+    --primary: 24 95% 53%;
+    --primary-foreground: 60 9% 98%;
+    --ring: 24 95% 53%;
+  }
+  .dark .theme-orange {
+    --primary: 20 80% 50%;
+    --primary-foreground: 60 9% 98%;
+    --ring: 20 80% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    font-weight: 500;
+  }
+
+  /* Refined typography - less aggressive */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-bold;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  h1 {
+    @apply text-5xl md:text-6xl lg:text-7xl;
+  }
+
+  h2 {
+    @apply text-4xl md:text-5xl lg:text-6xl;
+  }
+
+  h3 {
+    @apply text-3xl md:text-4xl lg:text-5xl;
+  }
+
+  h4 {
+    @apply text-2xl md:text-3xl;
+  }
+
+  p {
+    @apply font-normal;
+  }
+}
+
+@layer utilities {
+  /* Refined shadow system */
+  .shadow-brutal {
+    box-shadow: 4px 4px 0px 0px rgb(0 0 0 / 0.1);
+  }
+
+  .shadow-brutal-lg {
+    box-shadow: 6px 6px 0px 0px rgb(0 0 0 / 0.15);
+  }
+
+  .shadow-brutal-xl {
+    box-shadow: 8px 8px 0px 0px rgb(0 0 0 / 0.2);
+  }
+
+  .dark .shadow-brutal {
+    box-shadow: 4px 4px 0px 0px rgb(255 255 255 / 0.1);
+  }
+
+  .dark .shadow-brutal-lg {
+    box-shadow: 6px 6px 0px 0px rgb(255 255 255 / 0.15);
+  }
+
+  .dark .shadow-brutal-xl {
+    box-shadow: 8px 8px 0px 0px rgb(255 255 255 / 0.2);
+  }
+
+  /* Refined borders */
+  .border-brutal {
+    border: 2px solid currentColor;
+  }
+
+  .border-brutal-thick {
+    border: 3px solid currentColor;
+  }
+
+  .border-brutal-mega {
+    border: 4px solid currentColor;
+  }
+
+  /* Smooth transitions */
+  .transition-none {
+    transition: none !important;
+  }
+
+  /* Subtle hover effect */
+  .hover-brutal {
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+  }
+
+  .hover-brutal:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px 0px rgb(0 0 0 / 0.15);
+  }
+
+  .dark .hover-brutal:hover {
+    box-shadow: 6px 6px 0px 0px rgb(255 255 255 / 0.15);
+  }
+
+  /* ACCENT HIGHLIGHT */
+  .accent-brutal {
+    background: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+  }
+}
+
+/* Code blocks - BRUTAL */
+pre {
+  background: #000000;
+  border: 4px solid #ffffff;
+  color: #ffffff;
+  font-family: "JetBrainsMono", monospace;
+  padding: 2rem;
+  font-weight: 700;
+}
+
+pre code {
+  background: none;
+  color: inherit;
+  font-size: 1rem;
+  padding: 0;
+  font-weight: 700;
+}
+
+/* NO BLUR - HARSH HEADER */
+header {
+  border-bottom: 4px solid currentColor;
+}
+
+/* Hide scrollbar utility class */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
