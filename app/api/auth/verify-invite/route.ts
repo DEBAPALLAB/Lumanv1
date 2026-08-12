@@ -1,22 +1,31 @@
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { getSession } from "@/lib/auth/session";
+import { corsPreflight, withCors } from "@/lib/cors";
 import { addMemberToOrganization, verifyOrganizationCode } from "@/lib/db/organizations";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 
+export function OPTIONS() {
+  return corsPreflight();
+}
+
+// CORS-enabled: the desktop app verifies an invite code directly against the
+// deployed origin before a session exists, so the resulting pending_join_org
+// cookie lands on the same origin the browser's OAuth callback will read
+// from. See lib/cors.ts.
 export async function POST(req: Request) {
   try {
     const { orgSlug, code } = await req.json();
 
     if (!orgSlug || !code) {
-      return apiError("Organization Name and Code are required", 400);
+      return withCors(apiError("Organization Name and Code are required", 400));
     }
 
     // Verify the code against the database
     const org = await verifyOrganizationCode(orgSlug, code);
 
     if (!org) {
-      return apiError("Invalid Organization Name or Invitation Code", 400);
+      return withCors(apiError("Invalid Organization Name or Invitation Code", 400));
     }
 
     const session = await getSession();
@@ -39,7 +48,7 @@ export async function POST(req: Request) {
 
       await addMemberToOrganization(org.id, user.id, "intern", assignedRoleId);
 
-      return apiSuccess({ success: true, slug: org.slug, loggedIn: true });
+      return withCors(apiSuccess({ success: true, slug: org.slug, loggedIn: true }));
     }
 
     // If valid but not logged in, set a cookie to indicate pending join
@@ -51,8 +60,8 @@ export async function POST(req: Request) {
       maxAge: 60 * 10, // 10 minutes
     });
 
-    return apiSuccess({ success: true, slug: org.slug, loggedIn: false });
+    return withCors(apiSuccess({ success: true, slug: org.slug, loggedIn: false }));
   } catch (error) {
-    return apiError("Internal Server Error", 500);
+    return withCors(apiError("Internal Server Error", 500));
   }
 }

@@ -18,6 +18,9 @@ export type LumanDesktopAPI = {
   notification: {
     show: (title: string, body?: string) => Promise<void>;
   };
+  shell: {
+    openExternal: (url: string) => Promise<void>;
+  };
   onMenuAction: (callback: (action: string) => void) => () => void;
 };
 

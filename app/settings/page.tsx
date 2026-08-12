@@ -81,7 +81,7 @@ function SettingsContent() {
   async function handleLogout() {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
-      router.push("/login");
+      router.push(window.electronAPI?.isDesktop ? "/desktop" : "/login");
     } catch (err) {
       console.error("Logout failed:", err);
     }

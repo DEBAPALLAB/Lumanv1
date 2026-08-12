@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createSupabaseClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 import {
   ChevronRight,
   Home,
@@ -19,7 +20,10 @@ import {
   Laptop,
 } from "lucide-react";
 
-export function FloatingDock() {
+export function FloatingDock({
+  className,
+  style,
+}: { className?: string; style?: React.CSSProperties } = {}) {
   const pathname = usePathname();
   const params = useParams();
   const searchParams = useSearchParams();
@@ -133,7 +137,10 @@ export function FloatingDock() {
   }
 
   return (
-    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+    <div
+      className={cn("fixed top-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none", className)}
+      style={style}
+    >
       <div className="pointer-events-auto group flex items-center gap-2 h-14 px-5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border-[3px] border-black dark:border-stone-100 rounded-full shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:shadow-none hover:translate-y-[2px] transition-all duration-300">
         {items.map((item, index) => {
           const Icon = item.icon;

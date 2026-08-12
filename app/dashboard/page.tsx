@@ -99,14 +99,16 @@ function DashboardContent() {
   const [notes, setNotes] = useState<any[]>([]);
 
   async function checkSession() {
+    const isDesktop = window.electronAPI?.isDesktop;
+
     try {
       const res = await fetch(`/api/auth/session${orgSlug ? `?org=${orgSlug}` : ""}`);
       if (!res.ok) {
         if (res.status === 403) {
-          router.push("/org-register");
+          router.push(isDesktop ? "/desktop" : "/org-register");
           return;
         }
-        router.push(`/login${orgSlug ? `?org=${orgSlug}` : ""}`);
+        router.push(isDesktop ? "/desktop" : `/login${orgSlug ? `?org=${orgSlug}` : ""}`);
         return;
       }
 
@@ -114,7 +116,7 @@ function DashboardContent() {
       setSession(data.user);
     } catch (err) {
       console.error("Session check failed:", err);
-      router.push(`/login${orgSlug ? `?org=${orgSlug}` : ""}`);
+      router.push(isDesktop ? "/desktop" : `/login${orgSlug ? `?org=${orgSlug}` : ""}`);
     }
   }
 
@@ -207,6 +209,12 @@ function DashboardContent() {
   }, [session, orgSlug]);
 
   useEffect(() => {
+    return window.electronAPI?.onMenuAction((action) => {
+      if (action === "new-workspace") handleCreateWorkspace();
+    });
+  }, [session, orgSlug]);
+
+  useEffect(() => {
     let active = true;
 
     async function loadEvents() {
@@ -234,7 +242,7 @@ function DashboardContent() {
   async function handleLogout() {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
-      router.push("/login");
+      router.push(window.electronAPI?.isDesktop ? "/desktop" : "/login");
     } catch (err) {
       console.error("Logout failed:", err);
     }

@@ -222,6 +222,7 @@ let pendingDeepLink = null;
 
 /** Consume a `luman://auth/callback?code=...` deep link. */
 function handleDeepLink(rawUrl) {
+  console.log('[deep-link] handleDeepLink called with:', rawUrl);
   if (!rawUrl || !rawUrl.startsWith(`${PROTOCOL}://`)) return;
 
   // Not ready yet - replay once the window finishes booting.
@@ -320,6 +321,7 @@ async function createWindow() {
   mainWindow.on('unmaximize', notifyMaximizeState);
 
   // The desktop shell boots into its own entry route, never the marketing site.
+  // /desktop resolves session state and routes to onboarding or /dashboard.
   const targetUrl = `http://127.0.0.1:${resolvedPort}/desktop`;
   const serverReady = await checkServerReady(resolvedPort);
 
@@ -516,6 +518,10 @@ ipcMain.handle('notification:show', (_event, { title, body } = {}) => {
   if (!Notification.isSupported() || !title) return;
   new Notification({ title, body, icon: resolveIconPath() }).show();
 });
+ipcMain.handle('shell:openExternal', (_event, url) => {
+  if (typeof url !== 'string' || !/^https:\/\//.test(url)) return;
+  shell.openExternal(url);
+});
 
 // Single instance lock so the tray/deep links focus an existing window later.
 const gotLock = app.requestSingleInstanceLock();
@@ -525,11 +531,13 @@ if (!gotLock) {
   // Windows/Linux deliver deep links as argv of a second launch, which the
   // single-instance lock funnels into the already-running app.
   app.on('second-instance', (_event, argv) => {
+    console.log('[deep-link] second-instance argv:', argv);
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.focus();
     }
     const deepLink = argv.find((arg) => arg.startsWith(`${PROTOCOL}://`));
+    console.log('[deep-link] matched:', deepLink);
     if (deepLink) handleDeepLink(deepLink);
   });
 

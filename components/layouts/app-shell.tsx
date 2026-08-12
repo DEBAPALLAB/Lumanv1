@@ -1,6 +1,7 @@
 "use client";
 
 import { WorkspaceSidebar } from "@/components/dashboard/workspace-sidebar";
+import DesktopShell from "@/components/layouts/desktop-shell";
 import { FloatingDock } from "@/components/ui/floating-dock";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
@@ -11,6 +12,7 @@ export default function AppShell({
 }: {
   children: React.ReactNode;
 }) {
+  const [isDesktop, setIsDesktop] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isWorkspacesExpanded, setIsWorkspacesExpanded] = useState(true);
   const params = useParams();
@@ -28,6 +30,10 @@ export default function AppShell({
     }
   }, []);
 
+  useEffect(() => {
+    setIsDesktop(Boolean(window.electronAPI?.isDesktop));
+  }, []);
+
   const handleToggleWorkspaces = () => {
     const nextState = !isWorkspacesExpanded;
     setIsWorkspacesExpanded(nextState);
@@ -39,6 +45,14 @@ export default function AppShell({
   const sidebarWidthClass = !isWorkspacesExpanded
     ? "w-[84px]"
     : "w-full max-w-[344px] lg:w-[344px]";
+
+  // The desktop shell has its own sizing model built around the titlebar's
+  // real layout space — kept as a fully separate component rather than
+  // branching inline here, so the web shell below never has to account for
+  // it.
+  if (isDesktop) {
+    return <DesktopShell>{children}</DesktopShell>;
+  }
 
   return (
     <div className="h-screen flex flex-col relative overflow-hidden bg-[#FDFBF7] dark:bg-zinc-950">
@@ -79,7 +93,7 @@ export default function AppShell({
         <main
           className={cn(
             "flex-1 bg-background w-full",
-            isNotePage ? "h-full overflow-hidden flex flex-col" : "overflow-y-auto"
+            isNotePage ? "h-full overflow-hidden flex flex-col" : "overflow-y-auto scrollbar-thin"
           )}
         >
           {children}

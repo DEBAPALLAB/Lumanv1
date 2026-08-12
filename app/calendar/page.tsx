@@ -50,7 +50,9 @@ function CalendarContent() {
     try {
       const res = await fetch(`/api/auth/session${orgSlug ? `?org=${orgSlug}` : ""}`);
       if (!res.ok) {
-        router.push(`/login${orgSlug ? `?org=${orgSlug}` : ""}`);
+        router.push(
+          window.electronAPI?.isDesktop ? "/desktop" : `/login${orgSlug ? `?org=${orgSlug}` : ""}`,
+        );
         return;
       }
       const data = await res.json();

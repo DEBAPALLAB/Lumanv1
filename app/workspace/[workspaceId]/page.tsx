@@ -50,7 +50,9 @@ function WorkspaceContent() {
         const { data: { user } } = await supabase.auth.getUser();
 
         if (!user) {
-          router.push(`/login${orgSlug ? `?org=${orgSlug}` : ""}`);
+          router.push(
+            window.electronAPI?.isDesktop ? "/desktop" : `/login${orgSlug ? `?org=${orgSlug}` : ""}`,
+          );
           return;
         }
 

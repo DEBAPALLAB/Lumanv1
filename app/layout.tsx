@@ -5,6 +5,7 @@ import { GeistSans } from "geist/font/sans";
 
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { DesktopTitlebar } from "@/components/desktop-titlebar";
 import Providers from "./providers";
 
 const title = "Luman - Notion-style WYSIWYG editor with AI-powered autocompletions";
@@ -35,7 +36,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={GeistSans.variable}>
-        <Providers>{children}</Providers>
+        <DesktopTitlebar>
+          <Providers>{children}</Providers>
+        </DesktopTitlebar>
       </body>
     </html>
   );

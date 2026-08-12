@@ -22,6 +22,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   notification: {
     show: (title, body) => ipcRenderer.invoke('notification:show', { title, body }),
   },
+  shell: {
+    openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url),
+  },
   // Native menu / tray items dispatch here rather than navigating directly, so
   // routing stays owned by the renderer.
   onMenuAction: (callback) => {

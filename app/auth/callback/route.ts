@@ -3,6 +3,7 @@ import {
   getOrganizationBySlug,
   getUserMembership,
   getUserOrganizations,
+  verifyOrganizationCode,
 } from "@/lib/db/organizations";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
@@ -27,6 +28,11 @@ export async function GET(request: NextRequest) {
     cookieStore.get("sb_org_slug")?.value;
   const isNewOrg = requestUrl.searchParams.get("new") === "true";
   const isInvite = !!cookieStore.get("pending_join_org")?.value;
+  // Desktop's invite code travels through the OAuth redirect itself rather
+  // than a cookie — a cross-origin pre-auth call from the app's arbitrary
+  // localhost port can't persist a cookie onto this origin. Re-verified
+  // here (not just trusted) since it crossed the network as a plain param.
+  const desktopInviteCode = requestUrl.searchParams.get("invite");
 
   // Check for error and error_description from Supabase
   const error = requestUrl.searchParams.get("error");
@@ -49,7 +55,7 @@ export async function GET(request: NextRequest) {
   // So the exchange happens HERE, where the verifier lives, and the resulting
   // session tokens are handed to the app over the luman:// deep link. The app
   // installs them into its own cookie jar via /auth/desktop-session.
-  const isDesktopClientFlow = requestUrl.searchParams.get("desktop") === "1";
+  const isDesktopClientFlow = isDesktopClient;
 
   // If we have a code, exchange it for a session
   if (code) {
@@ -73,17 +79,6 @@ export async function GET(request: NextRequest) {
       // Clean up the org cookie
       cookieStore.delete("sb_org_slug");
 
-      // Desktop: the session now exists in THIS browser, but it belongs in the
-      // app. Hand the tokens over the deep link and stop here -- the app
-      // installs them and does its own org resolution.
-      if (isDesktopClientFlow) {
-        const handoff = new URL(`${requestUrl.origin}/auth/desktop`);
-        handoff.searchParams.set("access_token", session.access_token);
-        handoff.searchParams.set("refresh_token", session.refresh_token);
-        if (orgSlug) handoff.searchParams.set("org", orgSlug);
-        return NextResponse.redirect(handoff.toString());
-      }
-
       let organization = null;
       if (orgSlug) {
         // Verify specifically requested organization exists
@@ -100,21 +95,37 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      // Desktop hands off the session over the luman:// deep link either
+      // way — the app installs it and /desktop resolves org/workspace state
+      // itself. Web redirects straight to the resolved destination.
+      const finish = (destinationOrgSlug?: string) => {
+        if (isDesktopClientFlow) {
+          const handoff = new URL(`${requestUrl.origin}/auth/desktop`);
+          handoff.searchParams.set("access_token", session.access_token);
+          handoff.searchParams.set("refresh_token", session.refresh_token);
+          if (destinationOrgSlug) handoff.searchParams.set("org", destinationOrgSlug);
+          return NextResponse.redirect(handoff.toString());
+        }
+        return NextResponse.redirect(
+          destinationOrgSlug
+            ? `${requestUrl.origin}/dashboard?org=${destinationOrgSlug}`
+            : `${requestUrl.origin}/org-register?error=no_org_found`,
+        );
+      };
+
       // If STILL no organization, user needs to create one or is in a weird state
       if (!organization) {
-        if (isNewOrg) {
-          // This shouldn't theoretically happen if isNewOrg is true but org slug is missing
-          // but we can fallback to org registration
-          return NextResponse.redirect(`${requestUrl.origin}/org-register`);
+        if (isDesktopClientFlow) {
+          return NextResponse.redirect(`${requestUrl.origin}/desktop?error=no_org_found`);
         }
-        return NextResponse.redirect(`${requestUrl.origin}/org-register?error=no_org_found`);
+        return finish(undefined);
       }
 
       // Check if user is already a member (redundant if we just fetched userOrgs, but good for safety)
       const membership = await getUserMembership(organization.id, user.id);
 
       if (membership) {
-        return NextResponse.redirect(`${requestUrl.origin}/dashboard?org=${orgSlug}`);
+        return finish(orgSlug);
       }
 
       // If we are here, user is authenticated but NOT a member of the target org.
@@ -122,22 +133,36 @@ export async function GET(request: NextRequest) {
       // In that case, we should probably check if they are a member of ANY org (again)
       // but if we are in 'isNewOrg' flow, we add them.
 
-      // Redirect to role selection or dashboard
+      // New org created pre-auth (web: /org-register, desktop: the
+      // create-team onboarding step) — the creator becomes founder here,
+      // the first moment a session exists to attach the membership to.
       if (isNewOrg) {
         await addMemberToOrganization(organization.id, user.id, "founder");
-        return NextResponse.redirect(`${requestUrl.origin}/dashboard?org=${orgSlug}`);
+        return finish(orgSlug);
       }
 
-      // Check for valid invite
+      // Check for valid invite (web: cookie set by the same-origin
+      // pre-auth check; desktop: code carried through the redirect itself)
       if (isInvite) {
         await addMemberToOrganization(organization.id, user.id, "intern");
         // Clear the cookie
         cookieStore.delete("pending_join_org");
-        return NextResponse.redirect(`${requestUrl.origin}/dashboard?org=${orgSlug}`);
+        return finish(orgSlug);
+      }
+
+      if (desktopInviteCode) {
+        const verifiedOrg = await verifyOrganizationCode(organization.slug, desktopInviteCode);
+        if (verifiedOrg) {
+          await addMemberToOrganization(organization.id, user.id, "intern");
+          return finish(orgSlug);
+        }
       }
 
       // Fallback: User tried to join specific org but isn't a member.
       // STRICT MODE: Do NOT auto-assign. Redirect to register/join page.
+      if (isDesktopClientFlow) {
+        return NextResponse.redirect(`${requestUrl.origin}/desktop?error=needs_invite`);
+      }
       return NextResponse.redirect(`${requestUrl.origin}/register?error=needs_invite&org=${orgSlug}`);
     } catch (err) {
       return NextResponse.redirect(
