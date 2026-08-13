@@ -14,9 +14,9 @@
  * No image dependencies: PNGs are encoded here with zlib and packed into an
  * ICO container, so this runs on a bare checkout.
  */
-const fs = require('fs');
-const path = require('path');
-const zlib = require('zlib');
+const fs = require('node:fs');
+const path = require('node:path');
+const zlib = require('node:zlib');
 
 // Sizes Windows actually picks between: taskbar, Alt+Tab, Explorer views,
 // and the 256px entry used by the installer and high-DPI shells.

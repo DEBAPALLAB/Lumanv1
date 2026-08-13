@@ -1,3 +1,4 @@
+import { parseBearerToken } from "@/lib/auth/bearer";
 import { updateSession } from "@/lib/supabase/middleware";
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
@@ -7,6 +8,11 @@ const PUBLIC_API_PREFIXES = ["/api/auth", "/api/config"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Requests the desktop app delegates to this deployment identify themselves
+  // with a bearer token instead of a cookie (see lib/server/delegate.ts).
+  // Browsers never send this header, so its presence changes nothing for web.
+  const bearerToken = parseBearerToken(request.headers.get("authorization"));
 
   const needsAuth =
     PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`)) ||
@@ -28,7 +34,7 @@ export async function middleware(request: NextRequest) {
     );
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = bearerToken ? await supabase.auth.getUser(bearerToken) : await supabase.auth.getUser();
 
     if (!user) {
       if (pathname.startsWith("/api/")) {
@@ -39,6 +45,13 @@ export async function middleware(request: NextRequest) {
       url.searchParams.set("redirect", pathname);
       return NextResponse.redirect(url);
     }
+  }
+
+  // A bearer-authenticated API call carries no cookies, so there is no session
+  // to refresh and none of updateSession's redirects can apply. Skipping it
+  // avoids a second pointless round-trip to the auth server.
+  if (bearerToken && pathname.startsWith("/api/")) {
+    return NextResponse.next();
   }
 
   return await updateSession(request);

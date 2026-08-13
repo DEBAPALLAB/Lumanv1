@@ -1,3 +1,4 @@
+import { delegateIfSecretMissing } from "@/lib/server/delegate";
 import { openai } from "@ai-sdk/openai";
 import { Ratelimit } from "@upstash/ratelimit";
 import { kv } from "@vercel/kv";
@@ -8,6 +9,13 @@ import { match } from "ts-pattern";
 export const runtime = "edge";
 
 export async function POST(req: Request): Promise<Response> {
+  // The OpenAI key is billable and stays on the server; on desktop this runs
+  // against the deployed backend instead. If the deployment has no key either,
+  // the delegated request falls through to the 400 below, which is the same
+  // message the web app has always returned.
+  const delegated = await delegateIfSecretMissing(req, ["OPENAI_API_KEY"]);
+  if (delegated) return delegated;
+
   // Check if the OPENAI_API_KEY is set, if not return 400
   if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === "") {
     return new Response("Missing OPENAI_API_KEY - make sure to add it to your .env file.", {

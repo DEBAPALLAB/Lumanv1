@@ -1,9 +1,16 @@
+import { delegateIfSecretMissing } from "@/lib/server/delegate";
 import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
 
 export const runtime = "edge";
 
 export async function POST(req: Request) {
+  // The Blob token grants write access to your storage and stays on the
+  // server; on desktop the upload is forwarded to the deployed backend, which
+  // performs the `put` and returns the same blob descriptor.
+  const delegated = await delegateIfSecretMissing(req, ["BLOB_READ_WRITE_TOKEN"]);
+  if (delegated) return delegated;
+
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
     return new Response("Missing BLOB_READ_WRITE_TOKEN. Don't forget to add that to your .env file.", {
       status: 401,

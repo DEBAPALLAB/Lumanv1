@@ -32,6 +32,16 @@ export async function POST(req: NextRequest) {
       return apiError("Title and start_time are required", 400);
     }
 
+    // An event with no workspace belongs to no organisation, so no access rule
+    // can ever grant anyone sight of it again — it becomes an orphan row.
+    // The UI's workspace picker is already `required`; this closes the one path
+    // that slips past it (an organisation with no workspaces yet) with a clear
+    // message, rather than the opaque row-level-security rejection it would
+    // otherwise produce. Matches /api/tasks, which has always required one.
+    if (!workspace_id) {
+      return apiError("A workspace is required to create an event", 400);
+    }
+
     const event = await createEvent({
       title,
       description,

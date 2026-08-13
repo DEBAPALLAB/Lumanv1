@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, getBearerToken } from "@/lib/supabase/server";
 import type { RoleTier } from "@/types/role";
 import type { User } from "@supabase/supabase-js";
 
@@ -9,13 +9,19 @@ import type { User } from "@supabase/supabase-js";
  * different patterns for this (see plan's "Core Architectural Fixes").
  *
  * getUser() (not getSession()) is used deliberately: it validates against
- * the auth server rather than trusting a locally-cached JWT.
+ * the auth server rather than trusting a locally-cached JWT. That holds for
+ * both entry points: the cookie session, and the `Authorization: Bearer`
+ * token a delegated desktop request carries — the explicit `getUser(token)`
+ * call round-trips to the auth server exactly the same way, so a forged or
+ * expired token cannot pass.
  */
 export async function getSession() {
   const supabase = await createSupabaseServerClient();
+  const bearerToken = await getBearerToken();
+
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = bearerToken ? await supabase.auth.getUser(bearerToken) : await supabase.auth.getUser();
 
   if (!user) return null;
   return { user, supabase };

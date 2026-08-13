@@ -1,4 +1,5 @@
 import { insertChatMessage } from "@/lib/db/chat";
+import { delegateIfSecretMissing } from "@/lib/server/delegate";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createOpenAI } from "@ai-sdk/openai";
 import { streamText, tool } from "ai";
@@ -9,6 +10,11 @@ export const maxDuration = 30;
 
 export async function POST(req: Request) {
   try {
+    // The OpenRouter key is billable and stays on the server. On desktop this
+    // forwards to the deployed backend, whose response streams back unchanged.
+    const delegated = await delegateIfSecretMissing(req, ["OPENROUTER_API_KEY"]);
+    if (delegated) return delegated;
+
     const { messages, noteId, model } = await req.json();
 
     if (!noteId || !messages) {

@@ -8,11 +8,13 @@ const {
   Tray,
   Notification,
 } = require('electron');
-const path = require('path');
-const fs = require('fs');
-const http = require('http');
-const net = require('net');
-const { fork } = require('child_process');
+const path = require('node:path');
+const fs = require('node:fs');
+const http = require('node:http');
+const net = require('node:net');
+const { fork } = require('node:child_process');
+const { log, initLogging, watchProcessCrashes, openLogFolder, copyDiagnostics, getLogFilePath } = require('./logging');
+const { initAutoUpdates, checkForUpdatesInteractive } = require('./updater');
 
 let mainWindow = null;
 let serverProcess = null;
@@ -23,15 +25,57 @@ const DEFAULT_PORT = Number(process.env.PORT) || 3982;
 const isDev = !app.isPackaged;
 
 /**
- * Runtime server secrets are NOT baked into the build. They are read at launch
- * from (in priority order):
- *   1. process.env            (dev: already populated from .env.local)
- *   2. <userData>/config.json (packaged: user-managed secrets file)
- *   3. .env next to the executable (portable builds)
- * Only server-side values belong here; NEXT_PUBLIC_* vars are inlined by Next
- * at build time and cannot be overridden at runtime.
+ * The backend a build talks to when it has no secret of its own.
+ *
+ * Baked in so a fresh install works with zero configuration — the user
+ * downloads an installer and signs in, full stop. Overridable at launch (env
+ * var or config.json) so one binary can be pointed at staging.
  */
-const RUNTIME_SECRET_KEYS = [
+const DEFAULT_SITE_URL = 'https://lumanv1.vercel.app';
+
+/**
+ * Configuration the embedded server needs at launch, read from (in priority
+ * order):
+ *   1. process.env            (dev, or an explicitly exported var)
+ *   2. <userData>/config.json (installed builds)
+ *   3. .env next to the executable (portable builds)
+ *
+ * Everything here is either publishable (the Supabase URL and anon key are
+ * client-side values by design, governed by RLS) or a plain origin. Nothing
+ * on this list grants privilege.
+ *
+ * NEXT_PUBLIC_* names are inlined by Next at build time and cannot truly be
+ * overridden at runtime; they are carried so a build without them inlined
+ * still works.
+ */
+const RUNTIME_CONFIG_KEYS = [
+  'NEXT_PUBLIC_SUPABASE_URL',
+  'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+  // Read server-side by /api/config and by lib/server/delegate.ts. Only the
+  // non-public spelling is a real runtime lookup.
+  'SITE_URL',
+  'NEXT_PUBLIC_SITE_URL',
+];
+
+/**
+ * Server secrets that must NEVER reach a user's machine.
+ *
+ * The service-role key bypasses every RLS rule in the database; the AI keys
+ * are billable; the Blob token grants write access to storage. An Electron
+ * package is an archive, not a vault — anything shipped inside one is
+ * extractable in seconds.
+ *
+ * The routes that need these no longer require them locally: when a key is
+ * absent, the route forwards the request to the deployed backend carrying the
+ * user's own access token (lib/server/delegate.ts). So an installed build
+ * simply never loads them, and this list exists to say so explicitly.
+ *
+ * They are still loaded in a dev run, where they come from your own
+ * .env.local, so `pnpm electron` behaves exactly like `pnpm dev`. Set
+ * LUMAN_SIMULATE_DESKTOP=1 to withhold them and exercise the delegation path
+ * locally.
+ */
+const DELEGATED_SECRET_KEYS = [
   'SUPABASE_SERVICE_ROLE_KEY',
   'OPENROUTER_API_KEY',
   'OPENAI_API_KEY',
@@ -39,15 +83,6 @@ const RUNTIME_SECRET_KEYS = [
   'BLOB_READ_WRITE_TOKEN',
   'KV_REST_API_URL',
   'KV_REST_API_TOKEN',
-  'NEXT_PUBLIC_SUPABASE_URL',
-  'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-  // Read server-side by /api/config so desktop OAuth can resolve the public
-  // origin. Only the non-public spelling actually works at runtime -- the
-  // NEXT_PUBLIC_ one is inlined by the bundler at build time and cannot be
-  // overridden here. It is carried anyway so a build that has it inlined
-  // keeps behaving the same.
-  'SITE_URL',
-  'NEXT_PUBLIC_SITE_URL',
 ];
 
 function parseEnvFile(filePath) {
@@ -76,32 +111,60 @@ function parseEnvFile(filePath) {
   return out;
 }
 
-function loadRuntimeSecrets() {
-  const secrets = {};
+/**
+ * Keys this launch is allowed to pass to the embedded server. An installed
+ * build gets configuration only; a dev run also gets the delegated secrets so
+ * it behaves identically to `pnpm dev`.
+ */
+function allowedRuntimeKeys() {
+  const simulateDesktop = process.env.LUMAN_SIMULATE_DESKTOP === '1';
+  if (!isDev || simulateDesktop) return RUNTIME_CONFIG_KEYS;
+  return [...RUNTIME_CONFIG_KEYS, ...DELEGATED_SECRET_KEYS];
+}
 
-  // 3. .env beside the executable (portable installs) - lowest priority
+function loadRuntimeConfig() {
+  const keys = allowedRuntimeKeys();
+  const config = {};
+
+  // 4. Built-in default, so a fresh install needs no configuration at all.
+  config.SITE_URL = DEFAULT_SITE_URL;
+
+  // 3. .env beside the executable (portable installs)
   const exeDir = path.dirname(app.getPath('exe'));
-  Object.assign(secrets, parseEnvFile(path.join(exeDir, '.env')));
+  const portableEnv = parseEnvFile(path.join(exeDir, '.env'));
+  for (const key of keys) {
+    if (portableEnv[key]) config[key] = portableEnv[key];
+  }
+
+  // 3b. In a dev run, .env.local is the developer's own config. Next loads it
+  // for `pnpm dev`; the standalone server does not, so `pnpm electron` used to
+  // start with nothing unless the shell happened to export it.
+  if (isDev) {
+    const devEnv = parseEnvFile(path.join(__dirname, '..', '.env.local'));
+    for (const key of keys) {
+      if (devEnv[key]) config[key] = devEnv[key];
+    }
+  }
 
   // 2. userData config.json
   try {
     const configPath = path.join(app.getPath('userData'), 'config.json');
     if (fs.existsSync(configPath)) {
       const parsed = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      for (const key of RUNTIME_SECRET_KEYS) {
-        if (parsed[key]) secrets[key] = String(parsed[key]);
+      for (const key of keys) {
+        if (parsed[key]) config[key] = String(parsed[key]);
       }
     }
   } catch (err) {
-    console.error('Failed to read userData config.json:', err);
+    log.error('Failed to read userData config.json:', err);
   }
 
-  // 1. Real process env wins (dev via .env.local, or an explicitly set var)
-  for (const key of RUNTIME_SECRET_KEYS) {
-    if (process.env[key]) secrets[key] = process.env[key];
+  // 1. Real process env wins (an explicitly exported var)
+  for (const key of keys) {
+    if (process.env[key]) config[key] = process.env[key];
   }
 
-  return secrets;
+  return config;
 }
 
 /** Find the Next.js standalone server.js regardless of monorepo nesting. */
@@ -173,26 +236,41 @@ function checkServerReady(port, retries = 60) {
 
 function startNextServer(port, serverPath) {
   const standaloneRoot = path.dirname(serverPath);
-  console.log('Starting Next.js standalone server at:', serverPath);
+  log.info('Starting Next.js standalone server at:', serverPath);
+
+  const runtimeConfig = loadRuntimeConfig();
+  const allowed = new Set(allowedRuntimeKeys());
+
+  const childEnv = {
+    ...process.env,
+    ...runtimeConfig,
+    PORT: String(port),
+    HOSTNAME: '127.0.0.1',
+    NODE_ENV: 'production',
+  };
+
+  // The spread above inherits whatever the launching shell happened to export.
+  // Strip any secret this launch is not allowed to carry, so an installed
+  // build cannot pick one up by accident and LUMAN_SIMULATE_DESKTOP genuinely
+  // simulates a user machine.
+  for (const key of DELEGATED_SECRET_KEYS) {
+    if (!allowed.has(key)) delete childEnv[key];
+  }
+
+  log.info('[config] backend origin:', runtimeConfig.SITE_URL, '| local secrets:', allowed.size - RUNTIME_CONFIG_KEYS.length);
 
   serverProcess = fork(serverPath, [], {
     cwd: standaloneRoot,
-    env: {
-      ...process.env,
-      ...loadRuntimeSecrets(),
-      PORT: String(port),
-      HOSTNAME: '127.0.0.1',
-      NODE_ENV: 'production',
-    },
+    env: childEnv,
     stdio: 'inherit',
   });
 
   serverProcess.on('error', (err) => {
-    console.error('Failed to start Next.js server process:', err);
+    log.error('Failed to start Next.js server process:', err);
   });
 
   serverProcess.on('exit', (code, signal) => {
-    console.log(`Next.js server exited (code=${code}, signal=${signal})`);
+    log.info(`Next.js server exited (code=${code}, signal=${signal})`);
     serverProcess = null;
   });
 }
@@ -330,10 +408,13 @@ async function createWindow() {
   const serverReady = await checkServerReady(resolvedPort);
 
   if (!serverReady) {
+    log.error(`[startup] server never became ready on 127.0.0.1:${resolvedPort}`);
     dialog.showErrorBox(
       'Luman failed to start',
-      `The local Luman server did not become ready on 127.0.0.1:${resolvedPort}.\n\n` +
-        'Check that the application was built with `next build` (output: standalone).',
+      `Luman's local service did not start on 127.0.0.1:${resolvedPort}.\n\n` +
+        'This is usually a firewall or antivirus blocking local connections, or ' +
+        'another program already using the port.\n\n' +
+        `Details were written to:\n${getLogFilePath()}`,
     );
   }
 
@@ -465,6 +546,33 @@ function buildApplicationMenu() {
       label: '&Help',
       submenu: [
         {
+          label: 'Check for Updates…',
+          click: () => checkForUpdatesInteractive(() => mainWindow),
+        },
+        { type: 'separator' },
+        // The two things a support conversation always needs, one click each,
+        // so a user never has to be talked through finding them.
+        {
+          label: 'Open Log Folder',
+          click: () => openLogFolder(),
+        },
+        {
+          label: 'Copy Diagnostics',
+          click: () => {
+            copyDiagnostics({ 'Server port': resolvedPort ?? 'not started' });
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              dialog.showMessageBox(mainWindow, {
+                type: 'info',
+                title: 'Copied',
+                message: 'Diagnostics copied to your clipboard.',
+                detail: 'Paste this into your bug report.',
+                buttons: ['OK'],
+              });
+            }
+          },
+        },
+        { type: 'separator' },
+        {
           label: 'About Luman',
           click: () => {
             dialog.showMessageBox(mainWindow, {
@@ -552,13 +660,18 @@ if (!gotLock) {
   });
 
   app.whenReady().then(async () => {
+    initLogging();
+    watchProcessCrashes(() => mainWindow);
+
     const serverPath = resolveStandaloneServer();
 
     if (!serverPath) {
+      log.error('[startup] standalone server not found');
       dialog.showErrorBox(
         'Luman build missing',
         'Could not locate the Next.js standalone server (.next/standalone/**/server.js).\n\n' +
-          'Run `pnpm build` in apps/web before launching the desktop app.',
+          'If you installed Luman, the installation is damaged — reinstall it.\n' +
+          'If you are running from source, run `pnpm build:electron` first.',
       );
       app.quit();
       return;
@@ -571,6 +684,7 @@ if (!gotLock) {
     buildApplicationMenu();
     await createWindow();
     createTray();
+    initAutoUpdates(() => mainWindow);
 
     // Cold start via deep link: the URL arrives in this process's argv.
     const initialLink = process.argv.find((arg) => arg.startsWith(`${PROTOCOL}://`));

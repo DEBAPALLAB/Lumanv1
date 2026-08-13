@@ -1,3 +1,83 @@
 {
-  "extends": ["../../biome.json"]
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "ignore": [
+      "**/.next/**",
+      "**/dist/**",
+      "**/node_modules/**",
+      "**/playwright-report/**",
+      "**/test-results/**",
+      "**/*.tsbuildinfo",
+      "next-env.d.ts",
+      "components/ui/**"
+    ]
+  },
+  "organizeImports": {
+    "enabled": true
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 120
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "semicolons": "always",
+      "trailingCommas": "all"
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+
+      "suspicious": {
+        "noExplicitAny": "warn",
+        "noArrayIndexKey": "warn"
+      },
+
+      "correctness": {
+        "useExhaustiveDependencies": "warn"
+      },
+
+      "style": {
+        "noNonNullAssertion": "off",
+        "noParameterAssign": "off",
+        "useSingleVarDeclarator": "off",
+        "useTemplate": "warn",
+        "useDefaultParameterLast": "warn"
+      },
+
+      "complexity": {
+        "useLiteralKeys": "off",
+        "noForEach": "off",
+        "noUselessFragments": "warn"
+      },
+
+      "a11y": {
+        "useKeyWithClickEvents": "off",
+        "noSvgWithoutTitle": "off",
+        "useButtonType": "warn",
+        "noAutofocus": "warn",
+        "noLabelWithoutControl": "warn"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "include": ["electron/**/*.js", "scripts/**/*.js", "*.config.js"],
+      "javascript": {
+        "formatter": {
+          "quoteStyle": "single"
+        }
+      }
+    }
+  ]
 }

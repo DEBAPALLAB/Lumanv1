@@ -1,11 +1,18 @@
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { requireUser } from "@/lib/auth/session";
 import { getOrganizationMembers, getUserMembership, updateMemberRole } from "@/lib/db/organizations";
+import { delegateIfSecretMissing } from "@/lib/server/delegate";
 import { getUserById } from "@/lib/supabase/admin";
 import type { NextRequest } from "next/server";
 
 export async function GET(req: NextRequest) {
   try {
+    // Resolving a teammate's name and email needs the Supabase Admin API, and
+    // therefore the service-role key — which never ships to a user machine.
+    // On desktop this hands the request to the deployed backend, which has it.
+    const delegated = await delegateIfSecretMissing(req, ["SUPABASE_SERVICE_ROLE_KEY"]);
+    if (delegated) return delegated;
+
     const session = await requireUser();
     if (!session) return apiError("Unauthorized", 401);
     const { user } = session;
