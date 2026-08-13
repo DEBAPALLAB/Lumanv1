@@ -23,6 +23,8 @@ yarn.lock
 .env
 .env*.local
 
+
+DEPLOYMENT_READINESS.md
 # vercel
 .vercel
 

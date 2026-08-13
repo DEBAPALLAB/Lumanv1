@@ -42,7 +42,11 @@ const RUNTIME_SECRET_KEYS = [
   'NEXT_PUBLIC_SUPABASE_URL',
   'NEXT_PUBLIC_SUPABASE_ANON_KEY',
   // Read server-side by /api/config so desktop OAuth can resolve the public
-  // origin even when the build-time inline is missing.
+  // origin. Only the non-public spelling actually works at runtime -- the
+  // NEXT_PUBLIC_ one is inlined by the bundler at build time and cannot be
+  // overridden here. It is carried anyway so a build that has it inlined
+  // keeps behaving the same.
+  'SITE_URL',
   'NEXT_PUBLIC_SITE_URL',
 ];
 

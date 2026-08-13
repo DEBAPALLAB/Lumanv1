@@ -34,6 +34,52 @@ type SessionUser = {
 
 type CustomRole = { role_name: string; hierarchy_level: number };
 
+/** Thrown when the build has no site URL, which no retry can fix. */
+class SiteUrlMissingError extends Error {}
+
+/**
+ * Resolve the deployed origin this app hands off to for sign-in.
+ *
+ * Steps that talk to the deployed site (team lookup, invite check, OAuth
+ * entry) cannot use the embedded server: Supabase's PKCE verifier and the
+ * registered OAuth redirect both belong to the public origin, which the
+ * app's arbitrary loopback port is not.
+ */
+async function resolveSiteUrl(): Promise<string> {
+  const res = await fetch("/api/config");
+  if (!res.ok) throw new Error(`/api/config responded ${res.status}`);
+  const { siteUrl } = await res.json();
+  if (!siteUrl) throw new SiteUrlMissingError("No SITE_URL configured for this build");
+  // /api/config already strips this, but an older packaged build may not:
+  // a trailing slash composes to `//api/...`, which Vercel answers with a
+  // 308 carrying no CORS headers, so the request fails before the redirect
+  // is ever followed.
+  return String(siteUrl).replace(/\/+$/, "");
+}
+
+/**
+ * Turn a caught failure into a message worth showing, and leave the real
+ * cause in the console.
+ *
+ * Every failure here used to read "check your connection", which pointed
+ * users (and us) at their network while the actual causes were a wrong
+ * origin, a CORS rejection on a redirect, and a non-JSON response. Installs
+ * in the wild can only be diagnosed from what gets logged.
+ */
+function reportFailure(context: string, err: unknown): string {
+  console.error(`[onboarding:${context}]`, err);
+
+  if (err instanceof SiteUrlMissingError) {
+    return "This build isn't configured for sign-in. Please reinstall Luman";
+  }
+  // fetch() rejects with TypeError for a refused connection, a DNS failure
+  // and a CORS rejection alike -- the page genuinely cannot tell them apart.
+  if (err instanceof TypeError) {
+    return "Couldn't reach Luman's servers. Check your connection and try again";
+  }
+  return "Something went wrong. Please try again";
+}
+
 const GoogleG = () => (
   <svg className="size-5 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
     <path
@@ -126,8 +172,8 @@ export function DesktopOnboarding({
       setOrgSlug(data.slug);
       setIsNewOrg(true);
       setStep("signin");
-    } catch {
-      setError("Couldn't reach Luman. Check your connection and try again");
+    } catch (err) {
+      setError(reportFailure("create-team", err));
     } finally {
       setLoading(false);
     }
@@ -147,8 +193,7 @@ export function DesktopOnboarding({
     }
     setLoading(true);
     try {
-      const configRes = await fetch("/api/config");
-      const { siteUrl } = await configRes.json();
+      const siteUrl = await resolveSiteUrl();
       const res = await fetch(`${siteUrl}/api/auth/org/${slug}`);
       const data = await res.json();
       if (!res.ok || !data.exists) {
@@ -158,8 +203,8 @@ export function DesktopOnboarding({
       setOrgSlug(data.slug);
       setIsNewOrg(false);
       setStep("join-invite");
-    } catch {
-      setError("Couldn't reach Luman. Check your connection and try again");
+    } catch (err) {
+      setError(reportFailure("find-team", err));
     } finally {
       setLoading(false);
     }
@@ -174,8 +219,7 @@ export function DesktopOnboarding({
     }
     setLoading(true);
     try {
-      const configRes = await fetch("/api/config");
-      const { siteUrl } = await configRes.json();
+      const siteUrl = await resolveSiteUrl();
       // Called against the deployed origin (not the local embedded server)
       // purely to check the code before showing the sign-in step — no
       // session exists yet to attach cookies to, and a cross-origin
@@ -194,8 +238,8 @@ export function DesktopOnboarding({
         return;
       }
       setStep("signin");
-    } catch {
-      setError("Couldn't reach Luman. Check your connection and try again");
+    } catch (err) {
+      setError(reportFailure("verify-invite", err));
     } finally {
       setLoading(false);
     }
@@ -205,13 +249,7 @@ export function DesktopOnboarding({
     setError("");
     setLoading(true);
     try {
-      const configRes = await fetch("/api/config");
-      const { siteUrl } = await configRes.json();
-      if (!siteUrl) {
-        setError("Desktop sign-in isn't configured. Missing site URL");
-        setLoading(false);
-        return;
-      }
+      const siteUrl = await resolveSiteUrl();
       const loginUrl = new URL(`${siteUrl}/auth/desktop-login`);
       if (orgSlug) loginUrl.searchParams.set("org", orgSlug);
       if (isNewOrg) loginUrl.searchParams.set("new", "true");
@@ -227,8 +265,8 @@ export function DesktopOnboarding({
       } else {
         window.location.href = loginUrl.toString();
       }
-    } catch {
-      setError("Couldn't reach Luman. Check your connection and try again");
+    } catch (err) {
+      setError(reportFailure("sign-in", err));
       setLoading(false);
     }
   }
@@ -268,8 +306,8 @@ export function DesktopOnboarding({
       }
       setStep("done");
       setTimeout(() => router.push(`/dashboard?org=${orgSlug}`), 900);
-    } catch {
-      setError("Couldn't reach Luman. Check your connection and try again");
+    } catch (err) {
+      setError(reportFailure("create-workspace", err));
     } finally {
       setLoading(false);
     }
