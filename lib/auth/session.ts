@@ -19,11 +19,30 @@ export async function getSession() {
   const supabase = await createSupabaseServerClient();
   const bearerToken = await getBearerToken();
 
-  const {
-    data: { user },
-  } = bearerToken ? await supabase.auth.getUser(bearerToken) : await supabase.auth.getUser();
+  // getClaims() verifies the JWT's signature locally against this project's
+  // published JWKS (cached after first use) instead of asking the auth server,
+  // which is a ~200ms round trip this app was paying in every route.
+  //
+  // Still a genuine verification — a forged, tampered or expired token fails —
+  // and it holds for both entry points, the cookie session and the bearer
+  // token a delegated desktop request carries. Projects on legacy symmetric
+  // keys fall back to a network call automatically, so behaviour is unchanged
+  // there. The trade is a revoked-but-unexpired token staying valid until it
+  // expires; access tokens are short-lived and RLS still gates every query.
+  const { data } = await supabase.auth.getClaims(bearerToken ?? undefined);
+  const claims = data?.claims;
 
-  if (!user) return null;
+  if (!claims?.sub) return null;
+
+  // Routes read id, email and user_metadata off this. The claims carry all
+  // three, so the shape callers already expect is preserved without a second
+  // lookup to rebuild it.
+  const user = {
+    id: claims.sub,
+    email: claims.email as string | undefined,
+    user_metadata: (claims.user_metadata ?? {}) as Record<string, unknown>,
+  } as unknown as User;
+
   return { user, supabase };
 }
 

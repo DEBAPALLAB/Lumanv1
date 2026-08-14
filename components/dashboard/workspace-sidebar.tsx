@@ -11,6 +11,7 @@ import {
   Home,
   Calendar,
   CheckSquare,
+  MessageSquare,
   Settings,
   Search,
   Layers,
@@ -375,10 +376,12 @@ export function WorkspaceSidebar({
   const settingsHref = orgSlug ? `/settings?org=${orgSlug}` : "/settings";
   const tasksHref = orgSlug ? `/dashboard/tasks?org=${orgSlug}` : "/dashboard/tasks";
   const calendarHref = orgSlug ? `/calendar?org=${orgSlug}` : "/calendar";
- 
+  const chatHref = orgSlug ? `/messaging?org=${orgSlug}` : "/messaging";
+
   const isDashboardActive = pathname === "/dashboard" || pathname === "/" || (pathname.startsWith("/dashboard") && !pathname.startsWith("/dashboard/tasks"));
   const isTasksActive = pathname?.startsWith("/dashboard/tasks");
   const isCalendarActive = pathname?.startsWith("/calendar");
+  const isChatActive = pathname?.startsWith("/messaging");
   const isSettingsActive = pathname?.startsWith("/settings");
  
   const filteredWorkspaces = workspaces.filter((w) => {
@@ -491,6 +494,23 @@ export function WorkspaceSidebar({
             </div>
           </div>
  
+          {/* Team Chat Button */}
+          <div className="relative group">
+            <Link
+              href={chatHref}
+              prefetch
+              className={cn(
+                "flex items-center justify-center h-11 w-11 border-[3px] border-black dark:border-stone-100 rounded-full shadow-[2.5px_2.5px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2.5px_2.5px_0px_0px_rgba(255,255,255,1)] hover:shadow-none hover:translate-x-[1.5px] hover:translate-y-[1.5px] transition-all",
+                isChatActive ? "bg-[#FBBF24] text-black" : "bg-white dark:bg-zinc-900 text-black dark:text-stone-100"
+              )}
+            >
+              <MessageSquare className="h-5 w-5" />
+            </Link>
+            <div className="absolute left-full ml-4 top-1/2 -translate-y-1/2 hidden group-hover:block z-50 bg-black text-[#FBBF24] border-2 border-black dark:border-stone-100 text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-md whitespace-nowrap shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)]">
+              TEAM CHAT
+            </div>
+          </div>
+
           {/* Settings Button */}
           <div className="relative group">
             <Link

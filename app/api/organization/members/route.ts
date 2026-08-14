@@ -2,7 +2,7 @@ import { apiError, apiSuccess } from "@/lib/api-response";
 import { requireUser } from "@/lib/auth/session";
 import { getOrganizationMembers, getUserMembership, updateMemberRole } from "@/lib/db/organizations";
 import { delegateIfSecretMissing } from "@/lib/server/delegate";
-import { getUserById } from "@/lib/supabase/admin";
+import { getUserSummaries } from "@/lib/supabase/admin";
 import type { NextRequest } from "next/server";
 
 export async function GET(req: NextRequest) {
@@ -32,22 +32,19 @@ export async function GET(req: NextRequest) {
 
     const members = await getOrganizationMembers(orgId);
 
-    // Fetch user details for each member
-    const membersWithDetails = await Promise.all(
-      members.map(async (member) => {
-        const userData = await getUserById(member.user_id);
+    // One Admin API call for the whole org, not one per member. The previous
+    // per-member lookup made this route's latency scale with headcount, which
+    // was noticeable wherever it sits on a page's critical path.
+    const summaries = await getUserSummaries(members.map((member) => member.user_id));
 
-        if (!userData) {
-          return { ...member, full_name: "Unknown", email: "Unknown" };
-        }
-
-        return {
-          ...member,
-          full_name: userData.user_metadata?.full_name || userData.user_metadata?.name || "Unknown",
-          email: userData.email || "Unknown",
-        };
-      }),
-    );
+    const membersWithDetails = members.map((member) => {
+      const summary = summaries.get(member.user_id);
+      return {
+        ...member,
+        full_name: summary?.full_name ?? "Unknown",
+        email: summary?.email ?? "Unknown",
+      };
+    });
 
     return apiSuccess(membersWithDetails);
   } catch (error) {

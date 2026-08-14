@@ -143,13 +143,16 @@ function DashboardContent() {
 
       if (wsList.length > 0) {
         try {
-          const notesPromises = wsList.map((ws) =>
-            fetch(`/api/notes?workspaceId=${ws.id}`).then((res) => (res.ok ? res.json() : [])),
-          );
-          const notesResults = await Promise.all(notesPromises);
-          const allNotes = notesResults.flatMap((notesList, idx) => {
-            const ws = wsList[idx];
-            return (Array.isArray(notesList) ? notesList : []).map((n) => ({
+          // One request for every workspace's notes. Fetching per workspace
+          // meant N round trips, each re-paying auth and middleware cost, and
+          // the burst grew with the number of workspaces on the dashboard.
+          const ids = wsList.map((ws) => ws.id);
+          const res = await fetch(`/api/notes?workspaceIds=${encodeURIComponent(ids.join(","))}`);
+          const grouped = res.ok ? await res.json() : {};
+
+          const allNotes = wsList.flatMap((ws) => {
+            const notesList = grouped[ws.id];
+            return (Array.isArray(notesList) ? notesList : []).map((n: Record<string, unknown>) => ({
               ...n,
               workspaceName: ws.owner_name,
               workspaceColor: ws.color,

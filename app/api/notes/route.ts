@@ -7,15 +7,53 @@ export async function GET(req: Request) {
     const supabase = await createSupabaseServerClient();
     const { searchParams } = new URL(req.url);
     const workspaceId = searchParams.get("workspaceId");
+    // `workspaceIds` (comma-separated) fetches several workspaces at once. The
+    // dashboard needs notes for every workspace it lists, and asking per
+    // workspace meant N requests each paying full middleware + auth cost.
+    // `workspaceId` still works exactly as before for single-workspace callers.
+    const workspaceIdsParam = searchParams.get("workspaceIds");
 
-    if (!workspaceId) {
-      return apiError("workspaceId is required", 400);
+    if (!workspaceId && !workspaceIdsParam) {
+      return apiError("workspaceId or workspaceIds is required", 400);
+    }
+
+    const columns = "id, workspace_id, title, created_at, tags, due_date";
+
+    if (workspaceIdsParam) {
+      const ids = workspaceIdsParam
+        .split(",")
+        .map((id) => id.trim())
+        .filter(Boolean);
+
+      if (ids.length === 0) return apiError("workspaceIds must contain at least one id", 400);
+
+      const { data, error } = await supabase
+        .from("notes")
+        .select(columns)
+        .in("workspace_id", ids)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        return apiError(error.message, 500);
+      }
+
+      // Grouped by workspace so the caller does not have to bucket them, and
+      // so a workspace with no notes is still represented.
+      const grouped: Record<string, unknown[]> = {};
+      for (const id of ids) grouped[id] = [];
+      for (const note of data ?? []) {
+        // Every requested id was seeded above; RLS can only ever return fewer
+        // workspaces than asked for, never more, so this lookup always hits.
+        grouped[note.workspace_id]?.push(note);
+      }
+
+      return apiSuccess(grouped);
     }
 
     const { data, error } = await supabase
       .from("notes")
-      .select("id, workspace_id, title, created_at, tags, due_date")
-      .eq("workspace_id", workspaceId)
+      .select(columns)
+      .eq("workspace_id", workspaceId!)
       .order("created_at", { ascending: false });
 
     if (error) {

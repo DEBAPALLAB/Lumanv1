@@ -18,6 +18,11 @@ export async function middleware(request: NextRequest) {
     PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`)) ||
     (pathname.startsWith("/api/") && !PUBLIC_API_PREFIXES.some((p) => pathname.startsWith(p)));
 
+  // Carried into updateSession below so the auth server is asked who this is
+  // once per request rather than twice. `undefined` distinguishes "never
+  // looked" (public route) from "looked, nobody there" (null).
+  let authedUser: { id: string } | null | undefined;
+
   if (needsAuth) {
     // Lightweight check, independent of updateSession's cookie-writing
     // response chain below — just need to know if a user is present.
@@ -32,9 +37,29 @@ export async function middleware(request: NextRequest) {
         },
       },
     );
-    const {
-      data: { user },
-    } = bearerToken ? await supabase.auth.getUser(bearerToken) : await supabase.auth.getUser();
+    // getClaims() verifies the JWT's signature locally with the WebCrypto API
+    // against this project's published JWKS, which is cached after first use.
+    // getUser() instead asks the auth server on every call — a ~200ms round
+    // trip that every protected request in the app was paying before anything
+    // else ran.
+    //
+    // This is a real verification, not a decode: a forged or tampered token
+    // fails the signature check, and an expired one fails the exp check, both
+    // without trusting the cookie's contents. It is only equivalent to
+    // getUser() because this project signs with asymmetric keys (ES256) —
+    // with legacy symmetric keys getClaims() falls back to a network call and
+    // simply behaves as before, so this is safe either way.
+    //
+    // What it does NOT catch is a token revoked mid-life (sign-out elsewhere,
+    // password change) before it expires. Access tokens are short-lived and
+    // every route still runs its own authorisation against RLS, so the window
+    // is small and bounded — worth it for removing a round trip from the path
+    // of every single request.
+    const { data: claimsData } = await supabase.auth.getClaims(bearerToken ?? undefined);
+    const claims = claimsData?.claims;
+    const user = claims?.sub ? { id: claims.sub } : null;
+
+    authedUser = user;
 
     if (!user) {
       if (pathname.startsWith("/api/")) {
@@ -54,7 +79,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  return await updateSession(request);
+  return await updateSession(request, authedUser);
 }
 
 export const config = {

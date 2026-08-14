@@ -296,3 +296,79 @@ header {
   background-color: hsl(var(--muted-foreground) / 0.4);
   background-clip: padding-box;
 }
+
+/* ==========================================================================
+   Team chat primitives
+   Motion is kept to transform/opacity so rows stay cheap to animate while a
+   transcript is scrolling. Durations are short — chat is a working surface,
+   not a landing page.
+   ========================================================================== */
+
+@keyframes chat-message-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes chat-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes chat-skeleton {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.75;
+  }
+}
+
+.animate-message-in {
+  animation: chat-message-in 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-pop-in {
+  animation: chat-pop-in 140ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-skeleton {
+  animation: chat-skeleton 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-message-in,
+  .animate-pop-in,
+  .animate-skeleton {
+    animation: none;
+  }
+}
+
+/* Paper grain. Sits behind the transcript so a large empty channel reads as a
+   surface rather than a blank div. pointer-events-none so it never eats a
+   click meant for a message. */
+.chat-grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 260 260' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.28'/%3E%3C/svg%3E");
+}
+.dark .chat-grain::before {
+  opacity: 0.22;
+  mix-blend-mode: screen;
+}
