@@ -15,10 +15,6 @@ const MAX_SUGGESTIONS = 6;
  *  noise for messages that are nowhere near the ceiling. */
 const COUNTER_THRESHOLD = 200;
 
-/** Window height below which the composer drops its optional chrome and gives
- *  the space back to the transcript. */
-const SHORT_VIEWPORT = 620;
-
 /**
  * Finds an in-progress `@mention` immediately before the caret.
  *
@@ -62,9 +58,6 @@ export function MessageComposer({
   const [failed, setFailed] = useState(false);
   const [mention, setMention] = useState<{ query: string; start: number } | null>(null);
   const [highlighted, setHighlighted] = useState(0);
-  // Whether the window is tall enough to spend a line on the keyboard hint.
-  // Starts true so the server render and first client paint agree.
-  const [roomy, setRoomy] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const suggestions = useMemo(() => {
@@ -78,27 +71,14 @@ export function MessageComposer({
       .slice(0, MAX_SUGGESTIONS);
   }, [mention, mentionCandidates]);
 
-  // Track how much vertical room the window has. A composer sized for a full
-  // screen leaves a resized-down window with almost no transcript, so both the
-  // hint line and the textarea's growth ceiling scale with the viewport.
-  useEffect(() => {
-    const measure = () => setRoomy(window.innerHeight >= SHORT_VIEWPORT);
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, []);
-
   // Grow with the content up to a ceiling, then scroll inside. Reset to auto
-  // first or the box can only ever get taller, never shorter. The ceiling is a
-  // share of the window rather than a constant, so the field can never crowd
-  // out the messages it belongs to.
+  // first or the box can only ever get taller, never shorter.
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
-    const ceiling = Math.max(72, Math.min(180, Math.round(window.innerHeight * 0.3)));
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, ceiling)}px`;
-  }, [value, roomy]);
+    el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
+  }, [value]);
 
   // Switching channels clears any half-typed message and returns focus, so a
   // draft never silently follows the reader into a different conversation.
@@ -174,12 +154,9 @@ export function MessageComposer({
 
   const picking = Boolean(mention) && suggestions.length > 0;
   const canSend = Boolean(value.trim()) && !overLimit && !sending && !disabled;
-  // In a short window every row belongs to the transcript, so the keyboard hint
-  // — the one thing here that is purely nice-to-have — stands down.
-  const showHint = focused && !disabled && roomy;
 
   return (
-    <div className={cn("relative shrink-0 border-t-[3px] px-3 pb-2.5 pt-2.5 sm:px-5 sm:pb-3", FRAME, PANEL)}>
+    <div className={cn("relative shrink-0 border-t-[3px] px-5 pb-4 pt-3", FRAME, PANEL)}>
       {picking && (
         <div
           id="mention-popup"
@@ -335,32 +312,28 @@ export function MessageComposer({
         </button>
       </div>
 
-      {/* The hint and counter only take vertical space when they have something
-          to say. Reserving a permanent line under the field left an empty band
-          above the window edge that swallowed transcript rows once the window
-          got short. */}
-      {(showHint || remaining <= COUNTER_THRESHOLD) && (
-        <div className="mt-1 flex items-center justify-between px-1">
-          <span className="text-[10.5px] leading-none text-black/30 dark:text-stone-100/30">
-            {showHint && (
-              <>
-                <span className="font-semibold">Enter</span> to send ·{" "}
-                <span className="font-semibold">Shift + Enter</span> for a new line
-              </>
-            )}
-          </span>
-          {remaining <= COUNTER_THRESHOLD && (
-            <span
-              className={cn(
-                "text-[10.5px] font-semibold leading-none tabular-nums",
-                overLimit ? "text-red-600 dark:text-red-400" : "text-black/40 dark:text-stone-100/40",
-              )}
-            >
-              {remaining.toLocaleString()}
-            </span>
+      {/* One line below the field carries both the hint and the counter, so the
+          composer's height does not jump when the counter appears. */}
+      <div className="mt-1.5 flex h-4 items-center justify-between px-1">
+        <span className="text-[10.5px] text-black/30 dark:text-stone-100/30">
+          {focused && !disabled && (
+            <>
+              <span className="font-semibold">Enter</span> to send ·{" "}
+              <span className="font-semibold">Shift + Enter</span> for a new line
+            </>
           )}
-        </div>
-      )}
+        </span>
+        {remaining <= COUNTER_THRESHOLD && (
+          <span
+            className={cn(
+              "text-[10.5px] font-semibold tabular-nums",
+              overLimit ? "text-red-600 dark:text-red-400" : "text-black/40 dark:text-stone-100/40",
+            )}
+          >
+            {remaining.toLocaleString()}
+          </span>
+        )}
+      </div>
     </div>
   );
 }

@@ -372,3 +372,236 @@ header {
   opacity: 0.22;
   mix-blend-mode: screen;
 }
+
+/* ==========================================================================
+   Note editor inside an OS window
+   The shared editor is styled for a full page: it wraps itself in a bordered,
+   shadowed card with a 600px floor and page-sized padding. Inside a window
+   that reads as a box drawn inside a box. These rules strip it back to a bare
+   document. Scoped to .os-note-editor so v1's note page, which still wants the
+   card, is untouched.
+   ========================================================================== */
+
+/* The card. novel renders EditorContent's className onto a wrapper whose exact
+   nesting depth is not part of its public API, so every candidate is matched:
+   the element carrying the app's own utility classes, and any ancestor of the
+   ProseMirror surface inside this scope. Belt and braces beats a selector that
+   silently stops matching on a library bump. */
+.os-note-editor div[class*="min-h-[600px]"],
+.os-note-editor div:has(> .ProseMirror),
+.os-note-editor div:has(> div > .ProseMirror) {
+  min-height: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* The editor's own "Saved / N words" strip. The window already reports save
+   state in its header, and inside a window this floated over the first line. */
+.os-note-editor > div > div:first-child:has(.rounded-full) {
+  display: none;
+}
+
+.os-note-editor .ProseMirror {
+  padding: 0 !important;
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+/* Lists: enough indent for the marker to sit clear of the text, and no more.
+   The page styling used a full page-sized indent, which stranded the content
+   in the middle of the window. */
+.os-note-editor .ProseMirror ol,
+.os-note-editor .ProseMirror ul {
+  padding-left: 1.6rem;
+  margin-block: 0.7rem;
+}
+
+.os-note-editor .ProseMirror li {
+  margin-block: 0.42rem;
+  padding-left: 0.3rem;
+}
+
+/* The marker itself. Without breathing room here the number collides with the
+   first word, which is what made the list feel glued together. */
+.os-note-editor .ProseMirror li::marker {
+  color: rgba(0, 0, 0, 0.4);
+  font-weight: 600;
+}
+.dark .os-note-editor .ProseMirror li::marker {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.os-note-editor .ProseMirror li > p {
+  margin-block: 0.1rem;
+}
+
+.os-note-editor .ProseMirror p {
+  margin-block: 0.7rem;
+}
+
+/* Nested content — quotes, code, images — needs its own separation or it
+   reads as part of the paragraph above it. */
+.os-note-editor .ProseMirror blockquote {
+  margin-block: 0.9rem;
+  padding-left: 0.9rem;
+  border-left: 3px solid rgba(0, 0, 0, 0.12);
+}
+
+.os-note-editor .ProseMirror pre {
+  margin-block: 0.9rem;
+  padding: 0.9rem 1rem;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.os-note-editor .ProseMirror hr {
+  margin-block: 1.4rem;
+}
+
+.os-note-editor .ProseMirror h1 { font-size: 1.5rem; margin-block: 1.1rem 0.5rem; }
+.os-note-editor .ProseMirror h2 { font-size: 1.25rem; margin-block: 1rem 0.45rem; }
+.os-note-editor .ProseMirror h3 { font-size: 1.08rem; margin-block: 0.9rem 0.4rem; }
+
+/* A pasted URL used to run past the window's own edge. */
+.os-note-editor .ProseMirror a {
+  word-break: break-word;
+  text-decoration-color: rgba(0, 0, 0, 0.28);
+}
+
+.os-note-editor .ProseMirror img {
+  border-radius: 8px;
+  max-width: 100%;
+}
+
+/* ==========================================================================
+   OS window scrollbars
+   .scrollbar-thin colours its thumb with --border, which in this theme is pure
+   black — inside a window that reads as a heavy black slab down the edge. OS
+   surfaces get a quiet, self-effacing bar instead.
+   ========================================================================== */
+.os-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.22) transparent;
+}
+.os-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.os-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.os-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.18);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+.os-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.32);
+  background-clip: padding-box;
+}
+.os-scroll::-webkit-scrollbar-corner {
+  background: transparent;
+}
+.dark .os-scroll {
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+.dark .os-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.16);
+  background-clip: padding-box;
+}
+.dark .os-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  background-clip: padding-box;
+}
+
+/* ==========================================================================
+   Chat inside an OS window
+   The v1 transcript is tuned for a full-width page: a fixed 32px timestamp
+   gutter, page-sized row padding, and a hover toolbar that assumes there is
+   room to its right. In a 400px window the timestamp wraps to two lines, the
+   rows sprawl, and the toolbar lands on top of the message it belongs to.
+
+   Container queries rather than viewport breakpoints: what matters is how wide
+   *this window* is, not the screen. A chat window can be narrow on a 4K
+   display and wide on a laptop.
+   ========================================================================== */
+
+.os-chat {
+  container-type: inline-size;
+  container-name: chatwin;
+}
+
+/* Below ~520px the transcript switches to its compact form. */
+@container chatwin (max-width: 520px) {
+  /* The grouped-message timestamp gutter — NOT the avatar, which shares the
+     w-8 width. Distinguished by text-right, which only the gutter carries:
+     hiding the avatar too was wrong, it is what makes a transcript scannable.
+     The gutter keeps its width so grouped messages stay aligned under the
+     avatar above them; only the wrapping timestamp inside it goes. */
+  .os-chat .group > .w-8.text-right > span {
+    display: none;
+  }
+
+  /* Rows tighten up. The page spacing left three one-word messages looking
+     like three separate conversations. */
+  .os-chat .group {
+    padding-top: 0.15rem !important;
+    padding-bottom: 0.15rem !important;
+    gap: 0.5rem;
+  }
+
+  /* The hover toolbar moves inside the row's top-right rather than hanging
+     off the edge where it covered the text. */
+  .os-chat .group > .absolute {
+    top: -0.55rem !important;
+    right: 0.25rem !important;
+  }
+
+  /* The reading column and its page gutters are meaningless at this width. */
+  .os-chat .max-w-\[68rem\] {
+    max-width: 100%;
+  }
+}
+
+/* The transcript's own scroller, which still carried .scrollbar-thin and with
+   it the pure-black thumb. */
+.os-chat .overflow-y-auto {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.22) transparent;
+}
+.os-chat .overflow-y-auto::-webkit-scrollbar {
+  width: 10px;
+}
+.os-chat .overflow-y-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+.os-chat .overflow-y-auto::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.18);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+.os-chat .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.32);
+  background-clip: padding-box;
+}
+.dark .os-chat .overflow-y-auto {
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+.dark .os-chat .overflow-y-auto::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.16);
+  background-clip: padding-box;
+}
+
+/* The composer's heavy page chrome. Inside a window the frame is right there,
+   so the 3px top rule and page padding are redundant weight. */
+.os-chat .border-t-\[3px\] {
+  border-top-width: 1.5px !important;
+  border-top-color: rgba(0, 0, 0, 0.1) !important;
+}
+.dark .os-chat .border-t-\[3px\] {
+  border-top-color: rgba(255, 255, 255, 0.1) !important;
+}

@@ -361,7 +361,7 @@ export function MessageList({
           sits just above the composer instead of stranded at the top.
           The inner max-width is the reading column — full-bleed message text
           on a wide monitor is unreadable. */}
-      <div className="relative z-10 min-h-full flex flex-col justify-end px-4 py-3 sm:px-6 sm:py-5">
+      <div className="relative z-10 min-h-full flex flex-col justify-end px-6 py-5">
         <div className="mx-auto w-full max-w-[68rem]">
           {hasMore && (
             <div className="flex justify-center pb-5">
