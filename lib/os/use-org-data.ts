@@ -49,10 +49,19 @@ export type VoiceRoom = {
  * remembered slug, then the first membership — so both apps agree on which
  * organisation is open.
  */
+export type Identity = {
+  email: string | null;
+  fullName: string | null;
+  orgName: string | null;
+  /** The caller's role in the current organisation — "founder", "admin", "intern", etc. */
+  role: string | null;
+};
+
 export function useOrgData() {
   const [orgId, setOrgId] = useState<string | null>(null);
   const [orgSlug, setOrgSlug] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [identity, setIdentity] = useState<Identity>({ email: null, fullName: null, orgName: null, role: null });
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -77,6 +86,11 @@ export function useOrgData() {
         return;
       }
       if (!cancelled) setUserId(userData.user.id);
+
+      // Full name lives in auth metadata rather than a profile table in this
+      // schema — mirrors how the v1 sidebar and the messaging directory both
+      // read it.
+      const metaName = (userData.user.user_metadata as { full_name?: string } | null)?.full_name ?? null;
 
       const slug =
         new URLSearchParams(window.location.search).get("org") ?? sessionStorage.getItem("selected_org_slug");
@@ -106,18 +120,32 @@ export function useOrgData() {
       setOrgId(resolved);
       setOrgSlug(slug);
 
-      // The three lists the desktop needs up front, in parallel — they do not
-      // depend on each other, and serialising them would make the dock's first
-      // flyout wait on all three latencies back to back.
-      const [wsRes, foldersRes, channelsRes, boardsRes, roomsRes] = await Promise.all([
+      // The lists the desktop needs up front, in parallel — they do not depend
+      // on each other, and serialising them would make the dock's first flyout
+      // wait on all of these latencies back to back.
+      const [wsRes, foldersRes, channelsRes, boardsRes, roomsRes, orgRow, membershipRow] = await Promise.all([
         fetch(`/api/workspaces?orgId=${resolved}`),
         fetch(`/api/folders?orgId=${resolved}`),
         fetch(`/api/messaging/channels?organizationId=${resolved}`),
         fetch(`/api/whiteboards?organizationId=${resolved}`),
         fetch(`/api/voice/rooms?organizationId=${resolved}`),
+        supabase.from("organizations").select("name").eq("id", resolved).maybeSingle(),
+        supabase
+          .from("organization_members")
+          .select("role")
+          .eq("organization_id", resolved)
+          .eq("user_id", userData.user.id)
+          .maybeSingle(),
       ]);
 
       if (cancelled) return;
+
+      setIdentity({
+        email: userData.user.email ?? null,
+        fullName: metaName,
+        orgName: orgRow.data?.name ?? null,
+        role: membershipRow.data?.role ?? null,
+      });
 
       if (wsRes.ok) setWorkspaces((await wsRes.json()) as Workspace[]);
       if (foldersRes.ok) setFolders((await foldersRes.json()) as Folder[]);
@@ -194,6 +222,7 @@ export function useOrgData() {
     orgId,
     orgSlug,
     userId,
+    identity,
     workspaces,
     folders,
     channels,

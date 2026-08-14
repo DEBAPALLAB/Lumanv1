@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Dock } from "./dock";
 import { Flyout } from "./flyout";
 import { MinimizedBlobs } from "./minimized-blobs";
+import { ProfileBadge } from "./profile-badge";
 import { Spotlight, type SpotlightItem } from "./spotlight";
 import { WindowFrame } from "./window-frame";
 import { type DesktopContext, renderWindow } from "./window-registry";
@@ -30,6 +31,7 @@ export function Desktop() {
     orgId,
     orgSlug,
     userId,
+    identity,
     workspaces,
     folders,
     channels,
@@ -282,6 +284,8 @@ export function Desktop() {
       ))}
 
       <MinimizedBlobs />
+
+      <ProfileBadge identity={identity} />
 
       <Dock onSpotlight={() => setSpotlightOpen(true)} />
 
