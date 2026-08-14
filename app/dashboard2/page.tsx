@@ -1,7 +1,8 @@
 "use client";
 
 import { Desktop } from "@/components/os/desktop";
-import { Suspense } from "react";
+import { cn } from "@/lib/utils";
+import { Suspense, useEffect, useState } from "react";
 
 /**
  * Luman v2 — the workspace OS.
@@ -16,7 +17,27 @@ import { Suspense } from "react";
 export default function Dashboard2Page() {
   return (
     <Suspense fallback={<div className="h-screen w-screen bg-[#FDFBF7] dark:bg-zinc-950" />}>
-      <Desktop />
+      <Dashboard2Content />
     </Suspense>
+  );
+}
+
+function Dashboard2Content() {
+  // God Mode leaves this flag right before the route swap so the desktop can
+  // materialize in on arrival — the mirror of the dissolve it just watched on
+  // /dashboard, rather than a plain page load.
+  const [arrivedViaGodMode, setArrivedViaGodMode] = useState(false);
+
+  useEffect(() => {
+    if (sessionStorage.getItem("luman_god_mode_entry") === "1") {
+      sessionStorage.removeItem("luman_god_mode_entry");
+      setArrivedViaGodMode(true);
+    }
+  }, []);
+
+  return (
+    <div className={cn("h-screen w-screen", arrivedViaGodMode && "god-mode-materializing")}>
+      <Desktop />
+    </div>
   );
 }

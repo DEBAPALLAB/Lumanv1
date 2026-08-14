@@ -17,6 +17,7 @@ import {
   Layers,
   PanelLeftClose,
   PanelLeftOpen,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -50,13 +51,15 @@ interface WorkspaceSidebarProps {
   onToggleWorkspaces: () => void;
   isNotePage?: boolean;
   isNotesCollapsedOnNotePage?: boolean;
+  onGodMode?: () => void;
 }
- 
+
 export function WorkspaceSidebar({
   isWorkspacesExpanded,
   onToggleWorkspaces,
   isNotePage = false,
   isNotesCollapsedOnNotePage = false,
+  onGodMode,
 }: WorkspaceSidebarProps) {
   const params = useParams();
   const pathname = usePathname();
@@ -528,6 +531,22 @@ export function WorkspaceSidebar({
           </div>
         </div>
  
+        {/* God Mode Button */}
+        {onGodMode && (
+          <div className="relative group mt-auto">
+            <button
+              type="button"
+              onClick={onGodMode}
+              className="flex items-center justify-center h-11 w-11 border-[3px] border-black dark:border-stone-100 rounded-full bg-black dark:bg-stone-100 text-white dark:text-black shadow-[2.5px_2.5px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2.5px_2.5px_0px_0px_rgba(255,255,255,1)] hover:shadow-none hover:translate-x-[1.5px] hover:translate-y-[1.5px] transition-all"
+            >
+              <Sparkles className="h-5 w-5 text-[#FBBF24]" />
+            </button>
+            <div className="absolute left-full ml-4 top-1/2 -translate-y-1/2 hidden group-hover:block z-50 bg-black text-[#FBBF24] border-2 border-black dark:border-stone-100 text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-md whitespace-nowrap shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)]">
+              GOD MODE
+            </div>
+          </div>
+        )}
+
         {/* User avatar pinned to the bottom */}
         {user && (
           <div className="relative group mt-auto flex justify-center">
