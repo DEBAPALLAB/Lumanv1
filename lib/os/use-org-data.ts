@@ -1,7 +1,7 @@
 "use client";
 
 import { createSupabaseClient } from "@/lib/supabase/client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export type Workspace = {
   id: string;
@@ -32,8 +32,10 @@ export type VoiceRoom = {
   scope: "organization" | "workspace";
   workspace_id: string | null;
   organization_id: string;
+  started_by: string | null;
   started_at: string;
   expires_at: string;
+  closed_at?: string | null;
 };
 
 /**
@@ -59,6 +61,7 @@ export type Identity = {
 
 export function useOrgData() {
   const [orgId, setOrgId] = useState<string | null>(null);
+  const onRoomOpenedRef = useRef<(room: VoiceRoom) => void>(() => {});
   const [orgSlug, setOrgSlug] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [identity, setIdentity] = useState<Identity>({ email: null, fullName: null, orgName: null, role: null });
@@ -218,6 +221,48 @@ export function useOrgData() {
     setRooms(body.rooms ?? []);
   }, [orgId]);
 
+  /**
+   * Registers a callback for "a call just started somewhere in this org".
+   * Held in a ref so the caller can pass an inline closure without tearing
+   * down the realtime subscription below on every render.
+   */
+  const onRoomOpened = useCallback((handler: (room: VoiceRoom) => void) => {
+    onRoomOpenedRef.current = handler;
+  }, []);
+
+  // Live awareness of calls other people start, so the desktop can pop a
+  // notification instead of relying on someone opening the flyout to notice.
+  useEffect(() => {
+    if (!orgId) return;
+
+    const supabase = createSupabaseClient();
+    const realtimeChannel = supabase
+      .channel(`voice-rooms:${orgId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "voice_rooms", filter: `organization_id=eq.${orgId}` },
+        (payload) => {
+          const room = payload.new as VoiceRoom;
+          setRooms((prev) => (prev.some((r) => r.id === room.id) ? prev : [...prev, room]));
+          onRoomOpenedRef.current(room);
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "voice_rooms", filter: `organization_id=eq.${orgId}` },
+        (payload) => {
+          const room = payload.new as VoiceRoom;
+          if (!room.closed_at) return;
+          setRooms((prev) => prev.filter((r) => r.id !== room.id));
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(realtimeChannel);
+    };
+  }, [orgId]);
+
   return {
     orgId,
     orgSlug,
@@ -232,6 +277,7 @@ export function useOrgData() {
     loadNotes,
     refreshBoards,
     refreshRooms,
+    onRoomOpened,
     loading,
     error,
   };

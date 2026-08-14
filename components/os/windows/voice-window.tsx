@@ -4,6 +4,7 @@ import { createSupabaseClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { Loader2, Mic, MicOff, PhoneOff, Volume2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 /**
  * Public STUN only.
@@ -54,7 +55,7 @@ export function VoiceWindow({
 }) {
   const [status, setStatus] = useState<"connecting" | "live" | "denied" | "failed">("connecting");
   const [muted, setMuted] = useState(false);
-  const [participants, setParticipants] = useState<string[]>([]);
+  const [participants, setParticipants] = useState<{ id: string; name: string }[]>([]);
   const [expiresIn, setExpiresIn] = useState<number | null>(null);
 
   const localStream = useRef<MediaStream | null>(null);
@@ -108,13 +109,12 @@ export function VoiceWindow({
         const [stream] = e.streams;
         peers.current.set(peerId, { connection, stream });
         attachAudio(peerId, stream);
-        setParticipants((prev) => (prev.includes(peerId) ? prev : [...prev, peerId]));
       };
 
       connection.onconnectionstatechange = () => {
         if (connection.connectionState === "failed" || connection.connectionState === "closed") {
           peers.current.delete(peerId);
-          setParticipants((prev) => prev.filter((p) => p !== peerId));
+          setParticipants((prev) => prev.filter((p) => p.id !== peerId));
           audioHost.current?.querySelector(`audio[data-peer="${peerId}"]`)?.remove();
         }
       };
@@ -180,8 +180,11 @@ export function VoiceWindow({
         }
       })
         .on("presence", { event: "sync" }, async () => {
-          const others = Object.keys(ch.presenceState()).filter((id) => id !== me);
-          setParticipants(others);
+          const state = ch.presenceState() as Record<string, { name?: string }[]>;
+          const others = Object.keys(state).filter((id) => id !== me);
+          setParticipants(
+            others.map((id) => ({ id, name: state[id]?.[0]?.name || "Teammate" })),
+          );
 
           // The impolite peer offers. Comparing ids gives both sides the same
           // answer without another round trip.
@@ -201,10 +204,15 @@ export function VoiceWindow({
             });
           }
         })
+        .on("presence", { event: "join" }, ({ key, newPresences }: { key: string; newPresences: { name?: string }[] }) => {
+          if (key === me) return;
+          const name = newPresences?.[0]?.name || "A teammate";
+          toast(`${name} joined the call`);
+        })
         .on("presence", { event: "leave" }, ({ key }: { key: string }) => {
           peers.current.get(key)?.connection.close();
           peers.current.delete(key);
-          setParticipants((prev) => prev.filter((p) => p !== key));
+          setParticipants((prev) => prev.filter((p) => p.id !== key));
           audioHost.current?.querySelector(`audio[data-peer="${key}"]`)?.remove();
         })
         .subscribe((s: string) => {
@@ -324,8 +332,8 @@ export function VoiceWindow({
 
         <div className="mt-5 flex flex-wrap justify-center gap-1.5">
           <Chip label={`${displayName} (you)`} muted={muted} />
-          {participants.map((id) => (
-            <Chip key={id} label="Teammate" />
+          {participants.map((p) => (
+            <Chip key={p.id} label={p.name} />
           ))}
         </div>
       </div>

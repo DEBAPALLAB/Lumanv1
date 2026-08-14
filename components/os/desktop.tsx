@@ -5,6 +5,7 @@ import { useOrgData } from "@/lib/os/use-org-data";
 import { useDesktop, useDesktopActions } from "@/lib/os/window-store";
 import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Dock } from "./dock";
 import { Flyout } from "./flyout";
 import { MinimizedBlobs } from "./minimized-blobs";
@@ -41,6 +42,7 @@ export function Desktop() {
     loadNotes,
     refreshBoards,
     refreshRooms,
+    onRoomOpened,
     loading,
     error,
   } = useOrgData();
@@ -134,6 +136,28 @@ export function Desktop() {
     [orgId, refreshBoards, workspaces, actions],
   );
 
+  const callLabel = useCallback(
+    (scope: "organization" | "workspace", workspaceId?: string | null) =>
+      scope === "organization"
+        ? "Organization call"
+        : `${workspaces.find((w) => w.id === workspaceId)?.owner_name ?? "Workspace"} call`,
+    [workspaces],
+  );
+
+  /** Opens the voice window for an already-open room. */
+  const openCallWindow = useCallback(
+    (roomId: string, scope: "organization" | "workspace", workspaceId?: string | null) => {
+      const label = callLabel(scope, workspaceId);
+      actions.open({
+        kind: "voice",
+        title: label,
+        payload: { roomId, scopeLabel: label },
+        dedupeKey: `voice:${roomId}`,
+      });
+    },
+    [actions, callLabel],
+  );
+
   /** Opens or joins the call for a container. The POST is idempotent, so this
    *  is the same action whether or not a call is already running. */
   const startCall = useCallback(
@@ -148,21 +172,30 @@ export function Desktop() {
 
       const room = (await res.json()) as { id: string };
       await refreshRooms();
-
-      const label =
-        scope === "organization"
-          ? "Organization call"
-          : `${workspaces.find((w) => w.id === workspaceId)?.owner_name ?? "Workspace"} call`;
-
-      actions.open({
-        kind: "voice",
-        title: label,
-        payload: { roomId: room.id, scopeLabel: label },
-        dedupeKey: `voice:${room.id}`,
-      });
+      openCallWindow(room.id, scope, workspaceId);
     },
-    [orgId, refreshRooms, workspaces, actions],
+    [orgId, refreshRooms, openCallWindow],
   );
+
+  // Someone else starting a call anywhere in the org shows up here in real
+  // time — the flyout's live indicator alone is easy to miss since it is not
+  // open by default. Skipped for calls the current user just started, since
+  // startCall above already opens the window for that case.
+  useEffect(() => {
+    onRoomOpened((room) => {
+      if (room.started_by && room.started_by === userId) return;
+
+      const label = callLabel(room.scope, room.workspace_id);
+      toast(`${label} started`, {
+        description: "Someone started a voice call.",
+        action: {
+          label: "Join",
+          onClick: () => openCallWindow(room.id, room.scope, room.workspace_id),
+        },
+        duration: 15_000,
+      });
+    });
+  }, [onRoomOpened, callLabel, openCallWindow, userId]);
 
   // The voice window asks to be closed when its hang-up button is pressed —
   // it cannot close itself without reaching into the store from inside a
