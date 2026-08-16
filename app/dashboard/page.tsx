@@ -81,6 +81,31 @@ export default function DashboardPage() {
   );
 }
 
+/**
+ * Reads useGodMode() from inside AppShell's own children.
+ *
+ * DashboardContent renders <AppShell> as part of its own JSX, so a
+ * DashboardContent-level useGodMode() call resolves against whatever
+ * GodModeContext exists *above* DashboardContent in the tree — nothing —
+ * and silently falls back to the context default (a no-op), regardless of
+ * what AppShell provides internally. Only a component actually rendered
+ * inside AppShell's children can see the real value.
+ */
+function GodModeButton() {
+  const enterGodMode = useGodMode();
+
+  return (
+    <button
+      type="button"
+      onClick={enterGodMode}
+      className="group relative px-6 py-3.5 text-sm font-black uppercase border-[3px] border-black dark:border-stone-100 rounded-full bg-black dark:bg-stone-100 text-white dark:text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center gap-2"
+    >
+      <Sparkles className="h-4 w-4 text-[#FBBF24]" />
+      God Mode
+    </button>
+  );
+}
+
 function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -97,7 +122,6 @@ function DashboardContent() {
   const [sortBy, setSortBy] = useState<"name" | "date">("name");
   const [events, setEvents] = useState<DashboardEvent[]>([]);
   const [notes, setNotes] = useState<any[]>([]);
-  const enterGodMode = useGodMode();
 
   async function checkSession() {
     const isDesktop = window.electronAPI?.isDesktop;
@@ -438,14 +462,7 @@ function DashboardContent() {
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={enterGodMode}
-                  className="group relative px-6 py-3.5 text-sm font-black uppercase border-[3px] border-black dark:border-stone-100 rounded-full bg-black dark:bg-stone-100 text-white dark:text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center gap-2"
-                >
-                  <Sparkles className="h-4 w-4 text-[#FBBF24]" />
-                  God Mode
-                </button>
+                <GodModeButton />
 
                 <button
                   type="button"

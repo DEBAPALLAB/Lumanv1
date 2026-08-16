@@ -76,9 +76,7 @@ export function renderWindow(win: WindowState, ctx: DesktopContext) {
     }
 
     case "whiteboard":
-      return (
-        <WhiteboardWindow boardId={String(payload.boardId)} userId={ctx.userId} displayName={ctx.displayName} />
-      );
+      return <WhiteboardWindow boardId={String(payload.boardId)} userId={ctx.userId} displayName={ctx.displayName} />;
 
     case "voice":
       return (
@@ -99,7 +97,7 @@ export function renderWindow(win: WindowState, ctx: DesktopContext) {
     default:
       return (
         <div className="flex h-full items-center justify-center p-6">
-          <p className="text-[12.5px] text-black/40 dark:text-stone-100/40">{win.title}</p>
+          <p className="text-[12.5px] text-black/40 dark:text-[#EDE7DD]/40">{win.title}</p>
         </div>
       );
   }
@@ -108,7 +106,7 @@ export function renderWindow(win: WindowState, ctx: DesktopContext) {
 function Spinner() {
   return (
     <div className="flex h-full items-center justify-center">
-      <Loader2 className="h-5 w-5 animate-spin text-black/30 dark:text-stone-100/30" />
+      <Loader2 className="h-5 w-5 animate-spin text-black/30 dark:text-[#EDE7DD]/30" />
     </div>
   );
 }

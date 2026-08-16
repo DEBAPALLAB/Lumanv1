@@ -7,6 +7,7 @@ const {
   Menu,
   Tray,
   Notification,
+  desktopCapturer,
 } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
@@ -395,6 +396,35 @@ async function createWindow() {
 
   mainWindow.once('ready-to-show', () => mainWindow?.show());
 
+  // Answers getDisplayMedia() with whatever the in-app picker chose (see the
+  // screen:* IPC handlers). Without this Chromium has no picker of its own in
+  // Electron and the promise rejects, which is why sharing silently failed.
+  mainWindow.webContents.session.setDisplayMediaRequestHandler(
+    (_request, callback) => {
+      if (!pendingShareSourceId) {
+        // Denies rather than guessing a source — sharing the wrong screen is
+        // worse than not sharing at all.
+        callback({});
+        return;
+      }
+
+      const chosen = pendingShareSourceId;
+      pendingShareSourceId = null;
+
+      desktopCapturer
+        .getSources({ types: ['screen', 'window'] })
+        .then((sources) => {
+          const source = sources.find((s) => s.id === chosen);
+          // `audio: 'loopback'` shares system audio alongside the picture on
+          // Windows; it is ignored elsewhere.
+          callback(source ? { video: source, audio: 'loopback' } : {});
+        })
+        .catch(() => callback({}));
+    },
+    // The renderer draws its own picker, so Chromium must not also try to.
+    { useSystemPicker: false },
+  );
+
   const notifyMaximizeState = () => {
     if (!mainWindow || mainWindow.isDestroyed()) return;
     mainWindow.webContents.send('window:maximize-changed', mainWindow.isMaximized());
@@ -633,6 +663,49 @@ ipcMain.handle('notification:show', (_event, { title, body } = {}) => {
 ipcMain.handle('shell:openExternal', (_event, url) => {
   if (typeof url !== 'string' || !/^https:\/\//.test(url)) return;
   shell.openExternal(url);
+});
+
+/**
+ * Screen sharing.
+ *
+ * Chromium's own picker is not available to Electron: a renderer calling
+ * getDisplayMedia() gets nothing unless the main process answers the request
+ * itself. So the flow is inverted — the renderer lists sources, shows its own
+ * picker (which also lets it match the rest of the app), and stashes the
+ * chosen id here. The handler below then hands that source back to Chromium
+ * when the renderer immediately follows up with getDisplayMedia().
+ *
+ * `pendingShareSourceId` is the handoff between those two steps. It is cleared
+ * on use so a stale choice can never satisfy a later, unrelated request.
+ */
+let pendingShareSourceId = null;
+
+ipcMain.handle('screen:getSources', async () => {
+  // Thumbnails are for a picker grid, so they only need to be legible — full
+  // resolution here would mean multi-megabyte payloads over IPC per source.
+  const sources = await desktopCapturer.getSources({
+    types: ['screen', 'window'],
+    thumbnailSize: { width: 320, height: 200 },
+    fetchWindowIcons: true,
+  });
+
+  return sources.map((source) => ({
+    id: source.id,
+    name: source.name,
+    kind: source.id.startsWith('screen:') ? 'screen' : 'window',
+    thumbnail: source.thumbnail?.toDataURL() ?? null,
+    appIcon: source.appIcon?.toDataURL() ?? null,
+  }));
+});
+
+ipcMain.handle('screen:selectSource', (_event, sourceId) => {
+  if (typeof sourceId !== 'string') return false;
+  pendingShareSourceId = sourceId;
+  return true;
+});
+
+ipcMain.handle('screen:cancelSelection', () => {
+  pendingShareSourceId = null;
 });
 
 // Single instance lock so the tray/deep links focus an existing window later.

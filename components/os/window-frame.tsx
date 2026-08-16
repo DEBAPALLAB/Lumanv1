@@ -172,7 +172,7 @@ export function WindowFrame({
         // No overflow-hidden here: it would clip the resize handles that sit
         // just outside the border. The title bar and content clip themselves.
         "absolute flex flex-col rounded-[10px] border-[2px] border-black bg-white",
-        "dark:border-stone-100 dark:bg-zinc-900",
+        "dark:border-[#EDE7DD] dark:bg-[#211e1a]",
         // A soft, tinted drop shadow rather than the hard offset block the
         // dock buttons use. That treatment reads as deliberate at 40px; on a
         // 700px window it becomes a slab of solid black down two edges.
@@ -190,15 +190,15 @@ export function WindowFrame({
         className={cn(
           // Rounds with the frame, since the frame itself no longer clips.
           "flex h-9 shrink-0 select-none items-center gap-2 rounded-t-[8px] border-b-[2px] px-2.5",
-          "border-black dark:border-stone-100",
+          "border-black dark:border-[#EDE7DD]",
           win.maximized ? "cursor-default" : "cursor-grab active:cursor-grabbing",
-          focused ? "bg-[#FBBF24]" : "bg-black/[0.04] dark:bg-stone-100/[0.06]",
+          focused ? "bg-[#FBBF24]" : "bg-black/[0.04] dark:bg-[#EDE7DD]/[0.06]",
         )}
       >
         <span
           className={cn(
             "min-w-0 flex-1 truncate text-[12px] font-bold tracking-[-0.01em]",
-            focused ? "text-black" : "text-black/55 dark:text-stone-100/55",
+            focused ? "text-black" : "text-black/55 dark:text-[#EDE7DD]/55",
           )}
         >
           {win.title}
@@ -228,8 +228,8 @@ export function WindowFrame({
                 // title bar competed with the window's own frame.
                 btn.danger
                   ? "text-black/55 hover:bg-red-500 hover:text-white"
-                  : "text-black/55 hover:bg-black/15 hover:text-black dark:hover:bg-stone-100/20",
-                focused ? "text-black/60" : "text-black/40 dark:text-stone-100/40",
+                  : "text-black/55 hover:bg-black/15 hover:text-black dark:hover:bg-[#EDE7DD]/20",
+                focused ? "text-black/60" : "text-black/40 dark:text-[#EDE7DD]/40",
               )}
             >
               <btn.icon className="h-3 w-3" strokeWidth={2.75} />

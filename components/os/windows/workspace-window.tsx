@@ -47,26 +47,26 @@ export function WorkspaceWindow({
   if (!notes) return <GridSkeleton />;
 
   return (
-    <div className="flex h-full flex-col bg-white dark:bg-zinc-900">
+    <div className="flex h-full flex-col bg-white dark:bg-[#211e1a]">
       <div className="flex shrink-0 items-center gap-2 px-4 pb-2 pt-3.5">
         <div
           className={cn(
             "flex flex-1 items-center gap-2 rounded-[8px] bg-black/[0.045] px-2.5 py-[7px]",
             "ring-1 ring-inset ring-transparent transition-[background-color,box-shadow]",
             "focus-within:bg-transparent focus-within:ring-black/60",
-            "dark:bg-stone-100/[0.07] dark:focus-within:ring-stone-100/60",
+            "dark:bg-[#EDE7DD]/[0.07] dark:focus-within:ring-[#EDE7DD]/60",
           )}
         >
-          <Search className="h-3.5 w-3.5 shrink-0 text-black/35 dark:text-stone-100/35" strokeWidth={2.5} />
+          <Search className="h-3.5 w-3.5 shrink-0 text-black/35 dark:text-[#EDE7DD]/35" strokeWidth={2.5} />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search notes"
             aria-label="Search notes"
-            className="min-w-0 flex-1 bg-transparent text-[12px] font-medium outline-none placeholder:text-black/30 dark:text-stone-100 dark:placeholder:text-stone-100/30"
+            className="min-w-0 flex-1 bg-transparent text-[12px] font-medium outline-none placeholder:text-black/30 dark:text-[#EDE7DD] dark:placeholder:text-[#EDE7DD]/30"
           />
         </div>
-        <span className="shrink-0 text-[11px] font-semibold tabular-nums text-black/30 dark:text-stone-100/30">
+        <span className="shrink-0 text-[11px] font-semibold tabular-nums text-black/30 dark:text-[#EDE7DD]/30">
           {filtered.length}
         </span>
       </div>
@@ -74,10 +74,10 @@ export function WorkspaceWindow({
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 os-scroll">
         {filtered.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center py-12 text-center">
-            <div className="flex h-11 w-11 items-center justify-center rounded-[12px] bg-black/[0.05] dark:bg-stone-100/[0.08]">
-              <FileText className="h-5 w-5 text-black/30 dark:text-stone-100/30" strokeWidth={2} />
+            <div className="flex h-11 w-11 items-center justify-center rounded-[12px] bg-black/[0.05] dark:bg-[#EDE7DD]/[0.08]">
+              <FileText className="h-5 w-5 text-black/30 dark:text-[#EDE7DD]/30" strokeWidth={2} />
             </div>
-            <p className="mt-3 text-[13px] font-semibold text-black/50 dark:text-stone-100/50">
+            <p className="mt-3 text-[13px] font-semibold text-black/50 dark:text-[#EDE7DD]/50">
               {query ? "No notes match that" : "No notes here yet"}
             </p>
           </div>
@@ -102,7 +102,7 @@ export function WorkspaceWindow({
                   "bg-black/[0.035] ring-1 ring-inset ring-black/[0.06]",
                   "transition-[background-color,transform] duration-150",
                   "hover:-translate-y-0.5 hover:bg-black/[0.06]",
-                  "dark:bg-stone-100/[0.06] dark:ring-stone-100/[0.08] dark:hover:bg-stone-100/[0.1]",
+                  "dark:bg-[#EDE7DD]/[0.06] dark:ring-[#EDE7DD]/[0.08] dark:hover:bg-[#EDE7DD]/[0.1]",
                 )}
               >
                 <span
@@ -110,10 +110,10 @@ export function WorkspaceWindow({
                   style={{ background: workspace?.color || "#8FB8AC" }}
                   aria-hidden="true"
                 />
-                <span className="line-clamp-2 flex-1 text-[12.5px] font-semibold leading-snug text-black dark:text-stone-100">
+                <span className="line-clamp-2 flex-1 text-[12.5px] font-semibold leading-snug text-black dark:text-[#EDE7DD]">
                   {note.title || "Untitled"}
                 </span>
-                <span className="mt-1.5 text-[10px] tabular-nums text-black/30 dark:text-stone-100/30">
+                <span className="mt-1.5 text-[10px] tabular-nums text-black/30 dark:text-[#EDE7DD]/30">
                   {new Date(note.created_at).toLocaleDateString([], { month: "short", day: "numeric" })}
                 </span>
               </button>
@@ -131,7 +131,7 @@ function GridSkeleton() {
       {[0, 1, 2, 3, 4, 5].map((i) => (
         <div
           key={i}
-          className="h-[92px] rounded-[10px] bg-black/[0.05] animate-skeleton dark:bg-stone-100/[0.07]"
+          className="h-[92px] rounded-[10px] bg-black/[0.05] animate-skeleton dark:bg-[#EDE7DD]/[0.07]"
           style={{ animationDelay: `${i * 70}ms` }}
         />
       ))}

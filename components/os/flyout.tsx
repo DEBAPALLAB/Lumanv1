@@ -150,14 +150,19 @@ export function Flyout({
           // Height follows the content and only caps out on long lists, so a
           // panel with five workspaces is a small panel rather than a column
           // that runs to the bottom of the screen while the dock sits centred.
-          "fixed left-[88px] top-1/2 z-[8900] flex max-h-[min(560px,78vh)] w-[278px] -translate-y-1/2 flex-col",
+          // top offset mirrors the dock's own — see the comment there.
+          "fixed left-[88px] top-[calc(50%_+_var(--titlebar-h)/2)] z-[8900] flex max-h-[min(560px,78vh)] w-[278px] -translate-y-1/2 flex-col",
           "overflow-hidden rounded-[13px] border-[2.5px] border-black bg-white",
           "shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]",
-          "dark:border-stone-100 dark:bg-zinc-900 dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.9)]",
-          "animate-pop-in",
+          "dark:border-[#EDE7DD] dark:bg-[#211e1a] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.9)]",
+          // Not animate-pop-in: that animates `transform: scale(...)` on this
+          // same element, which would replace the -translate-y-1/2 above for
+          // the animation's duration and drop the vertical centring — see the
+          // comment on chat-pop-in-centered-y in globals.css.
+          "animate-pop-in-centered-y",
         )}
       >
-        <header className="flex h-10 shrink-0 items-center gap-2 border-b-[2px] border-black/12 px-3 dark:border-stone-100/12">
+        <header className="flex h-10 shrink-0 items-center gap-2 border-b-[2px] border-black/12 px-3 dark:border-[#EDE7DD]/12">
           {drilled && (
             <button
               type="button"
@@ -166,17 +171,17 @@ export function Flyout({
               className={cn(
                 "-ml-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-[5px]",
                 "text-black/50 transition-colors hover:bg-black/[0.06] hover:text-black",
-                "dark:text-stone-100/50 dark:hover:bg-stone-100/10 dark:hover:text-stone-100",
+                "dark:text-[#EDE7DD]/50 dark:hover:bg-[#EDE7DD]/10 dark:hover:text-[#EDE7DD]",
               )}
             >
               <ChevronLeft className="h-4 w-4" strokeWidth={2.75} />
             </button>
           )}
-          <h2 className="min-w-0 flex-1 truncate text-[13px] font-bold tracking-[-0.02em] text-black dark:text-stone-100">
+          <h2 className="min-w-0 flex-1 truncate text-[13px] font-bold tracking-[-0.02em] text-black dark:text-[#EDE7DD]">
             {title}
           </h2>
           {!drilled && (
-            <span className="shrink-0 text-[10.5px] font-semibold tabular-nums text-black/30 dark:text-stone-100/30">
+            <span className="shrink-0 text-[10.5px] font-semibold tabular-nums text-black/30 dark:text-[#EDE7DD]/30">
               {kind === "workspaces"
                 ? workspaces.length
                 : kind === "chats"
@@ -194,10 +199,10 @@ export function Flyout({
               "flex items-center gap-2 rounded-[8px] bg-black/[0.045] px-2.5 py-[7px]",
               "ring-1 ring-inset ring-transparent transition-[background-color,box-shadow]",
               "focus-within:bg-transparent focus-within:ring-black/60",
-              "dark:bg-stone-100/[0.07] dark:focus-within:ring-stone-100/60",
+              "dark:bg-[#EDE7DD]/[0.07] dark:focus-within:ring-[#EDE7DD]/60",
             )}
           >
-            <Search className="h-3.5 w-3.5 shrink-0 text-black/35 dark:text-stone-100/35" strokeWidth={2.5} />
+            <Search className="h-3.5 w-3.5 shrink-0 text-black/35 dark:text-[#EDE7DD]/35" strokeWidth={2.5} />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -213,7 +218,7 @@ export function Flyout({
                         : "Filter calls"
               }
               aria-label="Filter"
-              className="min-w-0 flex-1 bg-transparent text-[12px] font-medium outline-none placeholder:text-black/30 dark:text-stone-100 dark:placeholder:text-stone-100/30"
+              className="min-w-0 flex-1 bg-transparent text-[12px] font-medium outline-none placeholder:text-black/30 dark:text-[#EDE7DD] dark:placeholder:text-[#EDE7DD]/30"
             />
           </div>
         </div>
@@ -275,7 +280,7 @@ function SkeletonRows() {
       {["w-[80%]", "w-[64%]", "w-[72%]", "w-[55%]"].map((w, i) => (
         <div
           key={w}
-          className={cn("h-7 rounded-[6px] bg-black/[0.07] animate-skeleton dark:bg-stone-100/[0.07]", w)}
+          className={cn("h-7 rounded-[6px] bg-black/[0.07] animate-skeleton dark:bg-[#EDE7DD]/[0.07]", w)}
           style={{ animationDelay: `${i * 90}ms` }}
         />
       ))}
@@ -319,8 +324,8 @@ function InlineNameField({
 
   return (
     <div className="flex items-center gap-2 px-2 py-1">
-      <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[6px] bg-black/[0.05] dark:bg-stone-100/[0.08]">
-        <PenTool className="h-3.5 w-3.5 text-black/35 dark:text-stone-100/35" strokeWidth={2.5} />
+      <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[6px] bg-black/[0.05] dark:bg-[#EDE7DD]/[0.08]">
+        <PenTool className="h-3.5 w-3.5 text-black/35 dark:text-[#EDE7DD]/35" strokeWidth={2.5} />
       </span>
       <input
         ref={inputRef}
@@ -345,7 +350,7 @@ function InlineNameField({
         className={cn(
           "min-w-0 flex-1 rounded-[6px] bg-black/[0.045] px-2 py-1 text-[12px] font-medium outline-none",
           "text-black placeholder:text-black/30 ring-1 ring-inset ring-transparent focus:ring-black/50",
-          "dark:bg-stone-100/[0.07] dark:text-stone-100 dark:placeholder:text-stone-100/30 dark:focus:ring-stone-100/50",
+          "dark:bg-[#EDE7DD]/[0.07] dark:text-[#EDE7DD] dark:placeholder:text-[#EDE7DD]/30 dark:focus:ring-[#EDE7DD]/50",
         )}
       />
     </div>
@@ -354,7 +359,7 @@ function InlineNameField({
 
 const ROW = cn(
   "group flex w-full items-center gap-2.5 rounded-[8px] px-2 py-2 text-left",
-  "transition-colors duration-150 hover:bg-black/[0.055] dark:hover:bg-stone-100/[0.08]",
+  "transition-colors duration-150 hover:bg-black/[0.055] dark:hover:bg-[#EDE7DD]/[0.08]",
 );
 
 /**
@@ -399,7 +404,7 @@ function WorkspacesLevel({
         if (inFolder.length === 0) return null;
         return (
           <div key={folder.id}>
-            <p className="flex items-center gap-1.5 px-2.5 pb-1 pt-3 text-[9.5px] font-bold uppercase tracking-[0.1em] text-black/32 dark:text-stone-100/32">
+            <p className="flex items-center gap-1.5 px-2.5 pb-1 pt-3 text-[9.5px] font-bold uppercase tracking-[0.1em] text-black/32 dark:text-[#EDE7DD]/32">
               <FolderIcon className="h-3 w-3" strokeWidth={2.5} />
               {folder.name}
             </p>
@@ -413,7 +418,7 @@ function WorkspacesLevel({
       {unfiled.length > 0 && (
         <div>
           {folders.length > 0 && (
-            <p className="px-2.5 pb-1 pt-3 text-[9.5px] font-bold uppercase tracking-[0.1em] text-black/32 dark:text-stone-100/32">
+            <p className="px-2.5 pb-1 pt-3 text-[9.5px] font-bold uppercase tracking-[0.1em] text-black/32 dark:text-[#EDE7DD]/32">
               Unfiled
             </p>
           )}
@@ -434,18 +439,18 @@ function WorkspaceRow({ workspace, onDrill }: { workspace: Workspace; onDrill: (
       {/* A filled rounded square rather than a bordered box: the border made
           light workspace colours read as an unchecked checkbox. */}
       <span
-        className="h-[22px] w-[22px] shrink-0 rounded-[6px] ring-1 ring-inset ring-black/15 dark:ring-stone-100/15"
+        className="h-[22px] w-[22px] shrink-0 rounded-[6px] ring-1 ring-inset ring-black/15 dark:ring-[#EDE7DD]/15"
         style={{ background: colour }}
         aria-hidden="true"
       />
-      <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-black dark:text-stone-100">
+      <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-black dark:text-[#EDE7DD]">
         {workspace.owner_name}
       </span>
       <ChevronRight
         className={cn(
           "h-3.5 w-3.5 shrink-0 text-black/20 transition-transform duration-150",
           "group-hover:translate-x-0.5 group-hover:text-black/55",
-          "dark:text-stone-100/20 dark:group-hover:text-stone-100/55",
+          "dark:text-[#EDE7DD]/20 dark:group-hover:text-[#EDE7DD]/55",
         )}
         strokeWidth={2.5}
       />
@@ -475,10 +480,10 @@ function NotesLevel({
         <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[6px] bg-[#FBBF24] ring-1 ring-inset ring-black/15">
           <Layers className="h-3.5 w-3.5 text-black" strokeWidth={2.5} />
         </span>
-        <span className="text-[12.5px] font-bold text-black dark:text-stone-100">Open workspace</span>
+        <span className="text-[12.5px] font-bold text-black dark:text-[#EDE7DD]">Open workspace</span>
       </button>
 
-      <div className="mx-2 mb-1 h-px bg-black/10 dark:bg-stone-100/10" />
+      <div className="mx-2 mb-1 h-px bg-black/10 dark:bg-[#EDE7DD]/10" />
 
       {loading ? (
         <SkeletonRows />
@@ -487,10 +492,10 @@ function NotesLevel({
       ) : (
         notes.map((note) => (
           <button key={note.id} type="button" onClick={() => onOpenNote(note)} className={ROW}>
-            <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[6px] bg-black/[0.05] dark:bg-stone-100/[0.08]">
-              <FileText className="h-3.5 w-3.5 text-black/45 dark:text-stone-100/45" strokeWidth={2.5} />
+            <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[6px] bg-black/[0.05] dark:bg-[#EDE7DD]/[0.08]">
+              <FileText className="h-3.5 w-3.5 text-black/45 dark:text-[#EDE7DD]/45" strokeWidth={2.5} />
             </span>
-            <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium text-black dark:text-stone-100">
+            <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium text-black dark:text-[#EDE7DD]">
               {note.title || "Untitled"}
             </span>
           </button>
@@ -519,10 +524,10 @@ function ChannelsLevel({
 
   const row = (channel: Channel) => (
     <button key={channel.id} type="button" onClick={() => onOpenChannel(channel)} className={ROW}>
-      <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[6px] bg-black/[0.05] dark:bg-stone-100/[0.08]">
-        <Hash className="h-3.5 w-3.5 text-black/45 dark:text-stone-100/45" strokeWidth={2.75} />
+      <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[6px] bg-black/[0.05] dark:bg-[#EDE7DD]/[0.08]">
+        <Hash className="h-3.5 w-3.5 text-black/45 dark:text-[#EDE7DD]/45" strokeWidth={2.75} />
       </span>
-      <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium text-black dark:text-stone-100">
+      <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium text-black dark:text-[#EDE7DD]">
         {channel.name}
       </span>
     </button>
@@ -532,7 +537,7 @@ function ChannelsLevel({
     <div className="space-y-0.5">
       {org.length > 0 && (
         <>
-          <p className="px-2.5 pb-1 pt-1.5 text-[9.5px] font-bold uppercase tracking-[0.1em] text-black/32 dark:text-stone-100/32">
+          <p className="px-2.5 pb-1 pt-1.5 text-[9.5px] font-bold uppercase tracking-[0.1em] text-black/32 dark:text-[#EDE7DD]/32">
             Organization
           </p>
           {org.map(row)}
@@ -541,7 +546,7 @@ function ChannelsLevel({
 
       {byWorkspace.map((group) => (
         <div key={group.workspace.id}>
-          <p className="px-2.5 pb-1 pt-3 text-[9.5px] font-bold uppercase tracking-[0.1em] text-black/32 dark:text-stone-100/32">
+          <p className="px-2.5 pb-1 pt-3 text-[9.5px] font-bold uppercase tracking-[0.1em] text-black/32 dark:text-[#EDE7DD]/32">
             {group.workspace.owner_name}
           </p>
           {group.list.map(row)}
@@ -552,7 +557,7 @@ function ChannelsLevel({
 }
 
 function Empty({ label }: { label: string }) {
-  return <p className="px-2 py-6 text-center text-[11.5px] italic text-black/30 dark:text-stone-100/30">{label}</p>;
+  return <p className="px-2 py-6 text-center text-[11.5px] italic text-black/30 dark:text-[#EDE7DD]/30">{label}</p>;
 }
 
 /**
@@ -579,27 +584,27 @@ function BoardsLevel({
       <span
         className={cn(
           "flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[6px]",
-          hasContent ? "bg-[#FBBF24]" : "bg-black/[0.05] dark:bg-stone-100/[0.08]",
+          hasContent ? "bg-[#FBBF24]" : "bg-black/[0.05] dark:bg-[#EDE7DD]/[0.08]",
         )}
       >
         <PenTool
-          className={cn("h-3.5 w-3.5", hasContent ? "text-black" : "text-black/45 dark:text-stone-100/45")}
+          className={cn("h-3.5 w-3.5", hasContent ? "text-black" : "text-black/45 dark:text-[#EDE7DD]/45")}
           strokeWidth={2.5}
         />
       </span>
-      <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium text-black dark:text-stone-100">{label}</span>
+      <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium text-black dark:text-[#EDE7DD]">{label}</span>
     </button>
   );
 
   return (
     <div className="space-y-0.5">
-      <p className="px-2.5 pb-1 pt-1.5 text-[9.5px] font-bold uppercase tracking-[0.1em] text-black/32 dark:text-stone-100/32">
+      <p className="px-2.5 pb-1 pt-1.5 text-[9.5px] font-bold uppercase tracking-[0.1em] text-black/32 dark:text-[#EDE7DD]/32">
         Organization
       </p>
       {row("Organization board", Boolean(orgBoard), () => onOpenBoard("organization"), "org-board")}
 
       {workspaces.length > 0 && (
-        <p className="px-2.5 pb-1 pt-3 text-[9.5px] font-bold uppercase tracking-[0.1em] text-black/32 dark:text-stone-100/32">
+        <p className="px-2.5 pb-1 pt-3 text-[9.5px] font-bold uppercase tracking-[0.1em] text-black/32 dark:text-[#EDE7DD]/32">
           Workspaces
         </p>
       )}
@@ -635,16 +640,16 @@ function CallsLevel({
       <span
         className={cn(
           "flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[6px]",
-          live ? "bg-[#8FB8AC]" : "bg-black/[0.05] dark:bg-stone-100/[0.08]",
+          live ? "bg-[#8FB8AC]" : "bg-black/[0.05] dark:bg-[#EDE7DD]/[0.08]",
         )}
       >
         {live ? (
           <Radio className="h-3.5 w-3.5 text-black" strokeWidth={2.5} />
         ) : (
-          <Phone className="h-3.5 w-3.5 text-black/45 dark:text-stone-100/45" strokeWidth={2.5} />
+          <Phone className="h-3.5 w-3.5 text-black/45 dark:text-[#EDE7DD]/45" strokeWidth={2.5} />
         )}
       </span>
-      <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium text-black dark:text-stone-100">{label}</span>
+      <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium text-black dark:text-[#EDE7DD]">{label}</span>
       {live && (
         <span className="flex shrink-0 items-center gap-1 text-[9.5px] font-bold uppercase tracking-[0.06em] text-[#5E8378]">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#8FB8AC]" />
@@ -656,7 +661,7 @@ function CallsLevel({
 
   return (
     <div className="space-y-0.5">
-      <p className="px-2.5 pb-1 pt-1.5 text-[9.5px] font-bold uppercase tracking-[0.1em] text-black/32 dark:text-stone-100/32">
+      <p className="px-2.5 pb-1 pt-1.5 text-[9.5px] font-bold uppercase tracking-[0.1em] text-black/32 dark:text-[#EDE7DD]/32">
         Organization
       </p>
       {row(
@@ -667,7 +672,7 @@ function CallsLevel({
       )}
 
       {workspaces.length > 0 && (
-        <p className="px-2.5 pb-1 pt-3 text-[9.5px] font-bold uppercase tracking-[0.1em] text-black/32 dark:text-stone-100/32">
+        <p className="px-2.5 pb-1 pt-3 text-[9.5px] font-bold uppercase tracking-[0.1em] text-black/32 dark:text-[#EDE7DD]/32">
           Workspaces
         </p>
       )}

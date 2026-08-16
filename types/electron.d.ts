@@ -21,7 +21,23 @@ export type LumanDesktopAPI = {
   shell: {
     openExternal: (url: string) => Promise<void>;
   };
+  screen: {
+    getSources: () => Promise<DesktopCaptureSource[]>;
+    /** Nominates the source the next getDisplayMedia() call should resolve to. */
+    selectSource: (sourceId: string) => Promise<boolean>;
+    cancelSelection: () => Promise<void>;
+  };
   onMenuAction: (callback: (action: string) => void) => () => void;
+};
+
+/** One shareable screen or window, as offered by the native picker. */
+export type DesktopCaptureSource = {
+  id: string;
+  name: string;
+  kind: "screen" | "window";
+  /** Data URL preview, or null when the source could not be thumbnailed. */
+  thumbnail: string | null;
+  appIcon: string | null;
 };
 
 declare global {

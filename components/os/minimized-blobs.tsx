@@ -154,8 +154,8 @@ function Blob({ window: win, position }: { window: WindowState; position: { x: n
           "flex h-full w-full cursor-grab items-center justify-center rounded-[14px] border-[2px] border-black",
           "shadow-[0_3px_10px_-2px_rgba(0,0,0,0.25)] transition-transform duration-150",
           "hover:scale-105 active:cursor-grabbing active:scale-95",
-          "dark:border-stone-100",
-          KIND_TINT[win.kind] ?? "bg-white dark:bg-zinc-800",
+          "dark:border-[#EDE7DD]",
+          KIND_TINT[win.kind] ?? "bg-white dark:bg-[#2a2621]",
         )}
       >
         <Icon className="h-[19px] w-[19px] text-black" strokeWidth={2.4} />
@@ -171,7 +171,7 @@ function Blob({ window: win, position }: { window: WindowState; position: { x: n
           "truncate whitespace-nowrap rounded-[6px] bg-black px-2.5 py-1 text-[10.5px] font-semibold text-white",
           "opacity-0 transition-[opacity,transform] duration-150",
           "group-hover:translate-x-0 group-hover:opacity-100",
-          "dark:bg-stone-100 dark:text-black",
+          "dark:bg-[#EDE7DD] dark:text-black",
         )}
       >
         {win.title}

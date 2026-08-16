@@ -83,17 +83,21 @@ export function Dock({ onSpotlight }: { onSpotlight: () => void }) {
     <nav
       aria-label="Dock"
       className={cn(
-        "fixed left-4 top-1/2 z-[9000] -translate-y-1/2",
+        // The titlebar in the Electron app shrinks the space below it without
+        // moving the fixed containing block, so a bare 50% centres against the
+        // full OS window instead of the visible desktop — offset by half the
+        // titlebar's height to land on the true visual centre either way.
+        "fixed left-4 top-[calc(50%_+_var(--titlebar-h)/2)] z-[9000] -translate-y-1/2",
         "flex flex-col items-center gap-2 rounded-[16px] border-[3px] border-black bg-[#FDFBF7] p-2",
         "shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]",
-        "dark:border-stone-100 dark:bg-zinc-900 dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.9)]",
+        "dark:border-[#EDE7DD] dark:bg-[#211e1a] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.9)]",
       )}
     >
       {/* Spotlight sits at the top and is visually distinct — it is the one
           control that is about everything rather than about one app. */}
       <DockButton icon={Search} label="Search  ⌘K" onClick={onSpotlight} accent />
 
-      <div className="my-0.5 h-px w-7 bg-black/15 dark:bg-stone-100/15" />
+      <div className="my-0.5 h-px w-7 bg-black/15 dark:bg-[#EDE7DD]/15" />
 
       {launchers.map((item) => (
         <DockButton
@@ -133,7 +137,7 @@ function DockButton({
         className={cn(
           "flex h-10 w-10 items-center justify-center rounded-[10px] border-[2.5px] border-black",
           "transition-[transform,box-shadow,background-color] duration-150",
-          "dark:border-stone-100",
+          "dark:border-[#EDE7DD]",
           active
             ? // Pressed in: the shadow is gone and the button has moved into it,
               // the same affordance the rest of the app uses for an active press.
@@ -141,7 +145,7 @@ function DockButton({
             : cn(
                 "shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none",
                 "dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.9)]",
-                accent ? "bg-[#FBBF24] text-black" : "bg-white text-black dark:bg-zinc-800 dark:text-stone-100",
+                accent ? "bg-[#FBBF24] text-black" : "bg-white text-black dark:bg-[#2a2621] dark:text-[#EDE7DD]",
               ),
         )}
       >
@@ -155,7 +159,7 @@ function DockButton({
           "whitespace-nowrap rounded-[6px] border-[2px] border-black bg-black px-2.5 py-1",
           "text-[10.5px] font-semibold text-[#FBBF24] opacity-0",
           "transition-[opacity,transform] duration-150 group-hover:translate-x-0 group-hover:opacity-100",
-          "dark:border-stone-100 dark:bg-stone-100 dark:text-black",
+          "dark:border-[#EDE7DD] dark:bg-[#EDE7DD] dark:text-black",
         )}
       >
         {label}

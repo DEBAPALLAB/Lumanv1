@@ -4,6 +4,10 @@
 
 @layer base {
   :root {
+    /* Overridden by DesktopTitlebar to the real titlebar height in the
+       Electron app; 0 in the browser, where there is no titlebar to offset for. */
+    --titlebar-h: 0px;
+
     /* BRUTALIST - Harsh, uncompromising */
     --background: 0 0% 100%;
     --foreground: 0 0% 0%;
@@ -51,24 +55,28 @@
   }
 
   .dark {
-    /* Greyish dark mode - easier on the eyes */
-    --background: 0 0% 8%;
-    --foreground: 0 0% 95%;
+    /* Warm charcoal, matching the God Mode desktop's palette (components/os/) —
+       previously a flat 0-saturation gray (cold, and at 95% foreground against
+       an 8% background it read as stark rather than "easier on the eyes" as
+       the old comment claimed). Same lightness steps, warm hue/saturation
+       instead, so card/popover/secondary keep their relative elevation. */
+    --background: 36 12% 8%;
+    --foreground: 37 20% 90%;
 
-    --card: 0 0% 12%;
-    --card-foreground: 0 0% 95%;
+    --card: 36 12% 12%;
+    --card-foreground: 37 20% 90%;
 
-    --popover: 0 0% 10%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 36 12% 10%;
+    --popover-foreground: 37 20% 90%;
 
-    --primary: 0 0% 90%;
-    --primary-foreground: 0 0% 10%;
+    --primary: 37 20% 88%;
+    --primary-foreground: 37 20% 12%;
 
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 95%;
+    --secondary: 36 12% 15%;
+    --secondary-foreground: 37 20% 90%;
 
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 65%;
+    --muted: 36 12% 15%;
+    --muted-foreground: 37 20% 65%;
 
     /* Softer accent */
     --accent: 48 90% 55%;
@@ -77,10 +85,10 @@
     --destructive: 0 85% 55%;
     --destructive-foreground: 0 0% 98%;
 
-    /* Softer borders */
-    --border: 0 0% 25%;
-    --input: 0 0% 25%;
-    --ring: 0 0% 80%;
+    /* Visible but not stark against the warm background. */
+    --border: 36 12% 22%;
+    --input: 36 12% 22%;
+    --ring: 37 20% 75%;
 
     /* Novel Highlights */
     --novel-highlight-default: #1a1a1a;
@@ -326,6 +334,26 @@ header {
   }
 }
 
+/*
+ * Same entrance as chat-pop-in, but for an element whose own positioning
+ * relies on a `translateY(-50%)` (vertical centering via `top: 50%` plus a
+ * transform utility class) — a CSS animation on `transform` replaces the
+ * element's static transform for its duration, so a plain scale keyframe
+ * would silently drop that -50% and the element would render with its *top*
+ * edge at centre instead of its middle, landing roughly half its own height
+ * too low. Baking the translate into every keyframe keeps both effects.
+ */
+@keyframes chat-pop-in-centered-y {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+}
+
 @keyframes chat-skeleton {
   0%,
   100% {
@@ -344,6 +372,10 @@ header {
   animation: chat-pop-in 140ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.animate-pop-in-centered-y {
+  animation: chat-pop-in-centered-y 140ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 .animate-skeleton {
   animation: chat-skeleton 1.4s ease-in-out infinite;
 }
@@ -351,6 +383,7 @@ header {
 @media (prefers-reduced-motion: reduce) {
   .animate-message-in,
   .animate-pop-in,
+  .animate-pop-in-centered-y,
   .animate-skeleton {
     animation: none;
   }

@@ -25,6 +25,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   shell: {
     openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url),
   },
+  // Screen sharing is a two-step handshake: list sources, then nominate one
+  // just before calling getDisplayMedia(). See main.js for why the picker
+  // lives in the renderer rather than in Chromium.
+  screen: {
+    getSources: () => ipcRenderer.invoke('screen:getSources'),
+    selectSource: (sourceId) => ipcRenderer.invoke('screen:selectSource', sourceId),
+    cancelSelection: () => ipcRenderer.invoke('screen:cancelSelection'),
+  },
   // Native menu / tray items dispatch here rather than navigating directly, so
   // routing stays owned by the renderer.
   onMenuAction: (callback) => {

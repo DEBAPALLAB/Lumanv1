@@ -681,12 +681,12 @@ export function WhiteboardWindow({
       "flex h-7 w-7 items-center justify-center rounded-[6px] transition-colors duration-150",
       active
         ? "bg-[#FBBF24] text-black"
-        : "text-black/50 hover:bg-black/[0.06] hover:text-black dark:text-stone-100/50 dark:hover:bg-stone-100/10",
+        : "text-black/50 hover:bg-black/[0.06] hover:text-black dark:text-[#EDE7DD]/50 dark:hover:bg-[#EDE7DD]/10",
     );
 
   return (
-    <div className="flex h-full flex-col bg-white dark:bg-zinc-900">
-      <div className="flex shrink-0 flex-wrap items-center gap-1 border-b-[1.5px] border-black/[0.08] px-2.5 py-2 dark:border-stone-100/[0.08]">
+    <div className="flex h-full flex-col bg-white dark:bg-[#211e1a]">
+      <div className="flex shrink-0 flex-wrap items-center gap-1 border-b-[1.5px] border-black/[0.08] px-2.5 py-2 dark:border-[#EDE7DD]/[0.08]">
         {tools.map((t) => (
           <button
             key={t.id}
@@ -706,7 +706,7 @@ export function WhiteboardWindow({
           </button>
         ))}
 
-        <span className="mx-1 h-4 w-px bg-black/10 dark:bg-stone-100/10" />
+        <span className="mx-1 h-4 w-px bg-black/10 dark:bg-[#EDE7DD]/10" />
 
         {COLORS.map((c) => (
           <button
@@ -717,13 +717,13 @@ export function WhiteboardWindow({
             aria-pressed={color === c}
             className={cn(
               "h-5 w-5 rounded-full transition-transform duration-150 hover:scale-110",
-              color === c && "ring-2 ring-black/50 ring-offset-1 dark:ring-stone-100/50",
+              color === c && "ring-2 ring-black/50 ring-offset-1 dark:ring-[#EDE7DD]/50",
             )}
             style={{ background: c }}
           />
         ))}
 
-        <span className="mx-1 h-4 w-px bg-black/10 dark:bg-stone-100/10" />
+        <span className="mx-1 h-4 w-px bg-black/10 dark:bg-[#EDE7DD]/10" />
 
         {WIDTHS.map((w) => (
           <button
@@ -734,10 +734,10 @@ export function WhiteboardWindow({
             aria-pressed={width === w}
             className={cn(
               "flex h-7 w-7 items-center justify-center rounded-[6px] transition-colors duration-150",
-              width === w ? "bg-black/[0.09] dark:bg-stone-100/15" : "hover:bg-black/[0.05] dark:hover:bg-stone-100/10",
+              width === w ? "bg-black/[0.09] dark:bg-[#EDE7DD]/15" : "hover:bg-black/[0.05] dark:hover:bg-[#EDE7DD]/10",
             )}
           >
-            <span className="rounded-full bg-black dark:bg-stone-100" style={{ height: w, width: w }} />
+            <span className="rounded-full bg-black dark:bg-[#EDE7DD]" style={{ height: w, width: w }} />
           </button>
         ))}
 
@@ -747,7 +747,7 @@ export function WhiteboardWindow({
               {peers} here
             </span>
           )}
-          {saving && <Loader2 className="mr-1 h-3 w-3 animate-spin text-black/30 dark:text-stone-100/30" />}
+          {saving && <Loader2 className="mr-1 h-3 w-3 animate-spin text-black/30 dark:text-[#EDE7DD]/30" />}
 
           <button type="button" onClick={undo} aria-label="Undo" className={iconButton(false)}>
             <Undo2 className="h-[15px] w-[15px]" strokeWidth={2.4} />
@@ -759,7 +759,7 @@ export function WhiteboardWindow({
             type="button"
             onClick={clear}
             aria-label="Clear board"
-            className="flex h-7 w-7 items-center justify-center rounded-[6px] text-black/50 transition-colors duration-150 hover:bg-red-500 hover:text-white dark:text-stone-100/50"
+            className="flex h-7 w-7 items-center justify-center rounded-[6px] text-black/50 transition-colors duration-150 hover:bg-red-500 hover:text-white dark:text-[#EDE7DD]/50"
           >
             <Trash2 className="h-[15px] w-[15px]" strokeWidth={2.4} />
           </button>
@@ -768,8 +768,8 @@ export function WhiteboardWindow({
 
       <div ref={wrapRef} className="relative min-h-0 flex-1 overflow-hidden">
         {loading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 dark:bg-zinc-900/70">
-            <Loader2 className="h-5 w-5 animate-spin text-black/30 dark:text-stone-100/30" />
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 dark:bg-[#211e1a]/70">
+            <Loader2 className="h-5 w-5 animate-spin text-black/30 dark:text-[#EDE7DD]/30" />
           </div>
         )}
 
@@ -795,7 +795,7 @@ export function WhiteboardWindow({
 
         {/* Zoom controls, floating over the canvas. Bottom-right so they never
             sit under the toolbar or the first thing anyone draws. */}
-        <div className="absolute bottom-3 right-3 flex items-center gap-0.5 rounded-[9px] border border-black/10 bg-white/95 p-0.5 shadow-sm backdrop-blur dark:border-stone-100/10 dark:bg-zinc-800/95">
+        <div className="absolute bottom-3 right-3 flex items-center gap-0.5 rounded-[9px] border border-black/10 bg-white/95 p-0.5 shadow-sm backdrop-blur dark:border-[#EDE7DD]/10 dark:bg-[#2a2621]/95">
           <button
             type="button"
             onClick={() => {
@@ -816,7 +816,7 @@ export function WhiteboardWindow({
               redraw();
             }}
             aria-label="Reset zoom"
-            className="min-w-[44px] rounded-[6px] px-1 py-1 text-[10.5px] font-semibold tabular-nums text-black/55 transition-colors hover:bg-black/[0.06] dark:text-stone-100/55 dark:hover:bg-stone-100/10"
+            className="min-w-[44px] rounded-[6px] px-1 py-1 text-[10.5px] font-semibold tabular-nums text-black/55 transition-colors hover:bg-black/[0.06] dark:text-[#EDE7DD]/55 dark:hover:bg-[#EDE7DD]/10"
           >
             {zoomLabel}%
           </button>
@@ -833,14 +833,14 @@ export function WhiteboardWindow({
             <Plus className="h-[14px] w-[14px]" strokeWidth={2.5} />
           </button>
 
-          <span className="mx-0.5 h-4 w-px bg-black/10 dark:bg-stone-100/10" />
+          <span className="mx-0.5 h-4 w-px bg-black/10 dark:bg-[#EDE7DD]/10" />
 
           <button type="button" onClick={fitToContent} aria-label="Fit to content" className={iconButton(false)}>
             <Locate className="h-[14px] w-[14px]" strokeWidth={2.4} />
           </button>
         </div>
 
-        <p className="pointer-events-none absolute bottom-3 left-3 select-none text-[10px] text-black/25 dark:text-stone-100/25">
+        <p className="pointer-events-none absolute bottom-3 left-3 select-none text-[10px] text-black/25 dark:text-[#EDE7DD]/25">
           Scroll to pan · Ctrl+scroll to zoom
         </p>
       </div>

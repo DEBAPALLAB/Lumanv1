@@ -1,6 +1,7 @@
 "use client";
 
 import type { AuthorDirectory } from "@/components/messaging/message-list";
+import { useBaseLayout } from "@/lib/os/use-base-layout";
 import { useOrgData } from "@/lib/os/use-org-data";
 import { useDesktop, useDesktopActions } from "@/lib/os/window-store";
 import { cn } from "@/lib/utils";
@@ -46,6 +47,11 @@ export function Desktop() {
     loading,
     error,
   } = useOrgData();
+
+  // First-ever visit only: opens Tasks, Calendar, the org channel and the
+  // user's first workspace so the desktop isn't a blank room. No-ops on
+  // every visit after, including ones where the user closed everything.
+  useBaseLayout({ userId, workspaces, channels, loading });
 
   // The member directory backs both author names in chat and mention
   // autocomplete. Fetched once for the desktop rather than per chat window.
@@ -273,14 +279,14 @@ export function Desktop() {
 
   if (error) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-[#FDFBF7] px-6 dark:bg-zinc-950">
-        <p className="text-[14px] font-bold text-black dark:text-stone-100">{error}</p>
+      <div className="flex h-screen w-screen items-center justify-center bg-[#FDFBF7] px-6 dark:bg-[#171512]">
+        <p className="text-[14px] font-bold text-black dark:text-[#EDE7DD]">{error}</p>
       </div>
     );
   }
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-[#FDFBF7] dark:bg-zinc-950">
+    <div className="relative h-screen w-screen overflow-hidden bg-[#FDFBF7] dark:bg-[#171512]">
       {desktop.theme.grid && (
         <div
           aria-hidden="true"
@@ -296,12 +302,12 @@ export function Desktop() {
       {desktop.windows.length === 0 && !loading && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="text-center">
-            <p className="text-[15px] font-bold tracking-[-0.02em] text-black/45 dark:text-stone-100/40">
+            <p className="text-[15px] font-bold tracking-[-0.02em] text-black/45 dark:text-[#EDE7DD]/40">
               Your desktop is empty
             </p>
-            <p className="mt-1.5 text-[12.5px] text-black/35 dark:text-stone-100/30">
+            <p className="mt-1.5 text-[12.5px] text-black/35 dark:text-[#EDE7DD]/30">
               Open a workspace from the dock, or press{" "}
-              <kbd className="rounded-[4px] border-[1.5px] border-black/25 px-1.5 py-0.5 font-mono text-[11px] font-semibold dark:border-stone-100/25">
+              <kbd className="rounded-[4px] border-[1.5px] border-black/25 px-1.5 py-0.5 font-mono text-[11px] font-semibold dark:border-[#EDE7DD]/25">
                 ⌘K
               </kbd>{" "}
               to search.

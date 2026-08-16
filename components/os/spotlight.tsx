@@ -83,11 +83,11 @@ export function Spotlight({
           "fixed left-1/2 top-[12vh] z-[9500] w-[min(620px,calc(100vw-160px))] -translate-x-1/2",
           "overflow-hidden rounded-[14px] border-[3px] border-black bg-white",
           "shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]",
-          "dark:border-stone-100 dark:bg-zinc-900 dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,0.9)]",
+          "dark:border-[#EDE7DD] dark:bg-[#211e1a] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,0.9)]",
         )}
       >
-        <div className="flex items-center gap-3 border-b-[2.5px] border-black px-4 py-3.5 dark:border-stone-100">
-          <Search className="h-5 w-5 shrink-0 text-black dark:text-stone-100" strokeWidth={2.5} />
+        <div className="flex items-center gap-3 border-b-[2.5px] border-black px-4 py-3.5 dark:border-[#EDE7DD]">
+          <Search className="h-5 w-5 shrink-0 text-black dark:text-[#EDE7DD]" strokeWidth={2.5} />
           <input
             ref={inputRef}
             value={query}
@@ -114,17 +114,17 @@ export function Spotlight({
             aria-label="Search"
             className={cn(
               "min-w-0 flex-1 bg-transparent text-[17px] font-medium outline-none",
-              "text-black placeholder:text-black/30 dark:text-stone-100 dark:placeholder:text-stone-100/30",
+              "text-black placeholder:text-black/30 dark:text-[#EDE7DD] dark:placeholder:text-[#EDE7DD]/30",
             )}
           />
-          <kbd className="shrink-0 rounded-[4px] border-[1.5px] border-black/25 px-1.5 py-0.5 text-[10px] font-bold text-black/45 dark:border-stone-100/25 dark:text-stone-100/45">
+          <kbd className="shrink-0 rounded-[4px] border-[1.5px] border-black/25 px-1.5 py-0.5 text-[10px] font-bold text-black/45 dark:border-[#EDE7DD]/25 dark:text-[#EDE7DD]/45">
             ESC
           </kbd>
         </div>
 
         <div className="max-h-[52vh] overflow-y-auto p-1.5 os-scroll">
           {results.length === 0 ? (
-            <p className="px-3 py-6 text-center text-[12.5px] text-black/40 dark:text-stone-100/40">
+            <p className="px-3 py-6 text-center text-[12.5px] text-black/40 dark:text-[#EDE7DD]/40">
               Nothing matches “{query}”.
             </p>
           ) : (
@@ -137,7 +137,7 @@ export function Spotlight({
               return (
                 <div key={item.id}>
                   {showSection && (
-                    <p className="px-3 pb-1 pt-2.5 text-[9.5px] font-bold uppercase tracking-[0.09em] text-black/35 dark:text-stone-100/35">
+                    <p className="px-3 pb-1 pt-2.5 text-[9.5px] font-bold uppercase tracking-[0.09em] text-black/35 dark:text-[#EDE7DD]/35">
                       {item.section}
                     </p>
                   )}
@@ -147,18 +147,18 @@ export function Spotlight({
                     onClick={() => choose(item)}
                     className={cn(
                       "flex w-full items-center gap-3 rounded-[8px] px-3 py-2 text-left transition-colors duration-100",
-                      active ? "bg-[#FBBF24] text-black" : "text-black dark:text-stone-100",
+                      active ? "bg-[#FBBF24] text-black" : "text-black dark:text-[#EDE7DD]",
                     )}
                   >
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[6px] border-[2px] border-black bg-white dark:border-stone-100 dark:bg-zinc-800">
-                      <Icon className="h-3.5 w-3.5 text-black dark:text-stone-100" strokeWidth={2.4} />
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[6px] border-[2px] border-black bg-white dark:border-[#EDE7DD] dark:bg-[#2a2621]">
+                      <Icon className="h-3.5 w-3.5 text-black dark:text-[#EDE7DD]" strokeWidth={2.4} />
                     </span>
                     <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">{item.title}</span>
                     {item.hint && (
                       <span
                         className={cn(
                           "shrink-0 text-[11px]",
-                          active ? "text-black/55" : "text-black/40 dark:text-stone-100/40",
+                          active ? "text-black/55" : "text-black/40 dark:text-[#EDE7DD]/40",
                         )}
                       >
                         {item.hint}

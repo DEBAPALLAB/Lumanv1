@@ -50,7 +50,7 @@ const BUCKET_TINT: Record<Bucket, string> = {
   Today: "bg-[#FBBF24]",
   "This week": "bg-[#8FB8AC]",
   Later: "bg-[#7FA5C4]",
-  "No date": "bg-black/15 dark:bg-stone-100/20",
+  "No date": "bg-black/15 dark:bg-[#EDE7DD]/20",
 };
 
 /**
@@ -111,7 +111,7 @@ export function TasksWindow() {
         {[0, 1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="h-11 rounded-[9px] bg-black/[0.05] animate-skeleton dark:bg-stone-100/[0.07]"
+            className="h-11 rounded-[9px] bg-black/[0.05] animate-skeleton dark:bg-[#EDE7DD]/[0.07]"
             style={{ animationDelay: `${i * 80}ms` }}
           />
         ))}
@@ -153,12 +153,12 @@ export function TasksWindow() {
               <h3
                 className={cn(
                   "text-[10px] font-bold uppercase tracking-[0.09em]",
-                  bucket === "Overdue" ? "text-[#B4636A] dark:text-[#E8B4B8]" : "text-black/35 dark:text-stone-100/35",
+                  bucket === "Overdue" ? "text-[#B4636A] dark:text-[#E8B4B8]" : "text-black/35 dark:text-[#EDE7DD]/35",
                 )}
               >
                 {bucket}
               </h3>
-              <span className="text-[10px] font-semibold tabular-nums text-black/25 dark:text-stone-100/25">
+              <span className="text-[10px] font-semibold tabular-nums text-black/25 dark:text-[#EDE7DD]/25">
                 {items.length}
               </span>
             </div>
@@ -172,7 +172,7 @@ export function TasksWindow() {
                     <div
                       className={cn(
                         "group flex items-start gap-2.5 rounded-[9px] px-2.5 py-2",
-                        "transition-colors duration-150 hover:bg-black/[0.04] dark:hover:bg-stone-100/[0.06]",
+                        "transition-colors duration-150 hover:bg-black/[0.04] dark:hover:bg-[#EDE7DD]/[0.06]",
                         done && "opacity-45",
                       )}
                     >
@@ -186,7 +186,7 @@ export function TasksWindow() {
                           "ring-[1.5px] ring-inset transition-colors duration-150",
                           done
                             ? "bg-[#8FB8AC] ring-[#8FB8AC]"
-                            : "ring-black/25 hover:bg-black/[0.06] hover:ring-black/50 dark:ring-stone-100/25",
+                            : "ring-black/25 hover:bg-black/[0.06] hover:ring-black/50 dark:ring-[#EDE7DD]/25",
                         )}
                       >
                         {done && <Check className="h-3 w-3 text-black" strokeWidth={3} />}
@@ -195,14 +195,14 @@ export function TasksWindow() {
                       <div className="min-w-0 flex-1">
                         <p
                           className={cn(
-                            "text-[12.5px] font-medium leading-snug text-black dark:text-stone-100",
+                            "text-[12.5px] font-medium leading-snug text-black dark:text-[#EDE7DD]",
                             done && "line-through",
                           )}
                         >
                           {label}
                         </p>
                         {task.workspaces?.owner_name && (
-                          <p className="mt-0.5 truncate text-[10px] text-black/35 dark:text-stone-100/35">
+                          <p className="mt-0.5 truncate text-[10px] text-black/35 dark:text-[#EDE7DD]/35">
                             {task.workspaces.owner_name}
                           </p>
                         )}
@@ -214,7 +214,7 @@ export function TasksWindow() {
                             "mt-[1px] shrink-0 text-[10px] font-semibold tabular-nums",
                             bucket === "Overdue"
                               ? "text-[#B4636A] dark:text-[#E8B4B8]"
-                              : "text-black/30 dark:text-stone-100/30",
+                              : "text-black/30 dark:text-[#EDE7DD]/30",
                           )}
                         >
                           {new Date(task.due_date).toLocaleDateString([], { month: "short", day: "numeric" })}
@@ -243,11 +243,11 @@ function Message({
 }) {
   return (
     <div className="flex h-full flex-col items-center justify-center px-6 text-center">
-      <div className="flex h-11 w-11 items-center justify-center rounded-[12px] bg-black/[0.05] dark:bg-stone-100/[0.08]">
-        <Icon className="h-5 w-5 text-black/30 dark:text-stone-100/30" strokeWidth={2} />
+      <div className="flex h-11 w-11 items-center justify-center rounded-[12px] bg-black/[0.05] dark:bg-[#EDE7DD]/[0.08]">
+        <Icon className="h-5 w-5 text-black/30 dark:text-[#EDE7DD]/30" strokeWidth={2} />
       </div>
-      <p className="mt-3 text-[13px] font-semibold text-black/55 dark:text-stone-100/55">{title}</p>
-      {body && <p className="mt-1 text-[11.5px] text-black/35 dark:text-stone-100/35">{body}</p>}
+      <p className="mt-3 text-[13px] font-semibold text-black/55 dark:text-[#EDE7DD]/55">{title}</p>
+      {body && <p className="mt-1 text-[11.5px] text-black/35 dark:text-[#EDE7DD]/35">{body}</p>}
     </div>
   );
 }

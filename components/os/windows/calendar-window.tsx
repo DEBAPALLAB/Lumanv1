@@ -102,12 +102,12 @@ export function CalendarWindow() {
   if (!events) {
     return (
       <div className="p-4" aria-hidden="true">
-        <div className="mb-3 h-5 w-32 rounded-full bg-black/[0.07] animate-skeleton dark:bg-stone-100/[0.08]" />
+        <div className="mb-3 h-5 w-32 rounded-full bg-black/[0.07] animate-skeleton dark:bg-[#EDE7DD]/[0.08]" />
         <div className="grid grid-cols-7 gap-1">
           {Array.from({ length: 35 }, (_, i) => `sk-${i}`).map((key, i) => (
             <div
               key={key}
-              className="aspect-square rounded-[7px] bg-black/[0.05] animate-skeleton dark:bg-stone-100/[0.07]"
+              className="aspect-square rounded-[7px] bg-black/[0.05] animate-skeleton dark:bg-[#EDE7DD]/[0.07]"
               style={{ animationDelay: `${i * 12}ms` }}
             />
           ))}
@@ -120,11 +120,11 @@ export function CalendarWindow() {
     setCursor((current) => new Date(current.getFullYear(), current.getMonth() + delta, 1));
 
   return (
-    <div className="flex h-full flex-col bg-white dark:bg-zinc-900">
+    <div className="flex h-full flex-col bg-white dark:bg-[#211e1a]">
       <header className="flex shrink-0 items-center gap-1.5 px-4 pb-2 pt-3.5">
-        <h2 className="flex-1 text-[15px] font-bold tracking-[-0.02em] text-black dark:text-stone-100">
+        <h2 className="flex-1 text-[15px] font-bold tracking-[-0.02em] text-black dark:text-[#EDE7DD]">
           {cursor.toLocaleDateString([], { month: "long" })}{" "}
-          <span className="text-[12px] font-medium text-black/35 dark:text-stone-100/35">{cursor.getFullYear()}</span>
+          <span className="text-[12px] font-medium text-black/35 dark:text-[#EDE7DD]/35">{cursor.getFullYear()}</span>
         </h2>
 
         {[
@@ -139,7 +139,7 @@ export function CalendarWindow() {
             className={cn(
               "flex h-6 w-6 items-center justify-center rounded-[6px] text-black/45",
               "transition-colors duration-150 hover:bg-black/[0.06] hover:text-black",
-              "dark:text-stone-100/45 dark:hover:bg-stone-100/10 dark:hover:text-stone-100",
+              "dark:text-[#EDE7DD]/45 dark:hover:bg-[#EDE7DD]/10 dark:hover:text-[#EDE7DD]",
             )}
           >
             <btn.icon className="h-4 w-4" strokeWidth={2.5} />
@@ -156,7 +156,7 @@ export function CalendarWindow() {
           className={cn(
             "ml-0.5 rounded-[6px] px-2 py-1 text-[10.5px] font-semibold text-black/50",
             "transition-colors duration-150 hover:bg-black/[0.06] hover:text-black",
-            "dark:text-stone-100/50 dark:hover:bg-stone-100/10",
+            "dark:text-[#EDE7DD]/50 dark:hover:bg-[#EDE7DD]/10",
           )}
         >
           Today
@@ -172,7 +172,7 @@ export function CalendarWindow() {
           {WEEKDAYS.map((day, i) => (
             <span
               key={`${day}-${i}`}
-              className="text-center text-[9.5px] font-bold uppercase tracking-[0.06em] text-black/25 dark:text-stone-100/25"
+              className="text-center text-[9.5px] font-bold uppercase tracking-[0.06em] text-black/25 dark:text-[#EDE7DD]/25"
             >
               {day}
             </span>
@@ -199,12 +199,12 @@ export function CalendarWindow() {
                 className={cn(
                   "relative flex min-h-0 flex-col items-center justify-center rounded-[7px]",
                   "text-[11.5px] tabular-nums transition-colors duration-150",
-                  !inMonth && "text-black/20 dark:text-stone-100/20",
-                  inMonth && !isSelected && "text-black/70 hover:bg-black/[0.06] dark:text-stone-100/70",
+                  !inMonth && "text-black/20 dark:text-[#EDE7DD]/20",
+                  inMonth && !isSelected && "text-black/70 hover:bg-black/[0.06] dark:text-[#EDE7DD]/70",
                   isSelected && "bg-[#FBBF24] font-bold text-black",
                   isToday &&
                     !isSelected &&
-                    "font-bold text-black ring-[1.5px] ring-inset ring-black/40 dark:text-stone-100 dark:ring-stone-100/40",
+                    "font-bold text-black ring-[1.5px] ring-inset ring-black/40 dark:text-[#EDE7DD] dark:ring-[#EDE7DD]/40",
                 )}
               >
                 <span className="leading-none">{date.getDate()}</span>
@@ -231,8 +231,8 @@ export function CalendarWindow() {
       {/* Agenda for the selected day. Takes whatever the month grid leaves and
           scrolls internally, so a day with twelve events never pushes the grid
           out of the window. */}
-      <div className="mt-2.5 min-h-0 flex-1 overflow-y-auto border-t-[1.5px] border-black/[0.08] px-4 pb-4 pt-3 os-scroll dark:border-stone-100/[0.08]">
-        <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.09em] text-black/35 dark:text-stone-100/35">
+      <div className="mt-2.5 min-h-0 flex-1 overflow-y-auto border-t-[1.5px] border-black/[0.08] px-4 pb-4 pt-3 os-scroll dark:border-[#EDE7DD]/[0.08]">
+        <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.09em] text-black/35 dark:text-[#EDE7DD]/35">
           {new Date(`${selected}T00:00:00`).toLocaleDateString([], {
             weekday: "long",
             month: "long",
@@ -242,28 +242,28 @@ export function CalendarWindow() {
 
         {selectedEvents.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-6 text-center">
-            <CalendarDays className="h-5 w-5 text-black/20 dark:text-stone-100/20" strokeWidth={2} />
-            <p className="mt-2 text-[11.5px] text-black/35 dark:text-stone-100/35">Nothing scheduled</p>
+            <CalendarDays className="h-5 w-5 text-black/20 dark:text-[#EDE7DD]/20" strokeWidth={2} />
+            <p className="mt-2 text-[11.5px] text-black/35 dark:text-[#EDE7DD]/35">Nothing scheduled</p>
           </div>
         ) : (
           <ul className="space-y-1.5">
             {selectedEvents.map((event) => (
               <li
                 key={event.id}
-                className={cn("flex gap-2.5 rounded-[9px] px-2.5 py-2", "bg-black/[0.035] dark:bg-stone-100/[0.06]")}
+                className={cn("flex gap-2.5 rounded-[9px] px-2.5 py-2", "bg-black/[0.035] dark:bg-[#EDE7DD]/[0.06]")}
               >
                 <span className="mt-[3px] h-2 w-2 shrink-0 rounded-full bg-[#E0A458]" aria-hidden="true" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-[12.5px] font-semibold leading-snug text-black dark:text-stone-100">
+                  <p className="text-[12.5px] font-semibold leading-snug text-black dark:text-[#EDE7DD]">
                     {event.title}
                   </p>
-                  <p className="mt-0.5 flex items-center gap-1.5 text-[10.5px] text-black/40 dark:text-stone-100/40">
+                  <p className="mt-0.5 flex items-center gap-1.5 text-[10.5px] text-black/40 dark:text-[#EDE7DD]/40">
                     <span className="tabular-nums">
                       {new Date(event.start_time).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
                     </span>
                     {event.workspaces?.owner_name && (
                       <>
-                        <span className="text-black/20 dark:text-stone-100/20">·</span>
+                        <span className="text-black/20 dark:text-[#EDE7DD]/20">·</span>
                         <span className="truncate">{event.workspaces.owner_name}</span>
                       </>
                     )}

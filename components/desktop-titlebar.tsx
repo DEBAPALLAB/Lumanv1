@@ -20,7 +20,13 @@ export function DesktopTitlebar({ children }: { children: ReactNode }) {
   if (!isDesktop) return children;
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden">
+    <div
+      className="flex h-screen flex-col overflow-hidden"
+      // Exposed so viewport-`fixed` UI (the v2 desktop's dock, flyout, spotlight,
+      // profile badge) can re-centre against the space actually left below the
+      // titlebar instead of the full OS window — see os/desktop.tsx.
+      style={{ "--titlebar-h": "2rem" } as React.CSSProperties}
+    >
       <div className="flex h-8 w-full shrink-0 select-none items-center justify-between border-b border-border bg-background [-webkit-app-region:drag]">
         <span className="pl-3 text-xs text-muted-foreground">Luman</span>
         <div className="flex h-full [-webkit-app-region:no-drag]">

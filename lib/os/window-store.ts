@@ -107,9 +107,10 @@ const DEFAULT_SIZE: Record<WindowKind, { width: number; height: number }> = {
   tasks: { width: 640, height: 580 },
   calendar: { width: 860, height: 600 },
   workspace: { width: 560, height: 520 },
-  // A board wants room to draw; a call is a small status panel.
+  // A board wants room to draw; a call has to fit a participant grid and, once
+  // someone shares, a legible screen.
   whiteboard: { width: 900, height: 640 },
-  voice: { width: 360, height: 420 },
+  voice: { width: 720, height: 560 },
   settings: { width: 620, height: 500 },
   search: { width: 640, height: 420 },
 };
@@ -178,6 +179,8 @@ export function openWindow(input: {
   title: string;
   payload?: Record<string, unknown>;
   dedupeKey?: string;
+  /** Explicit placement, bypassing the cascade — used to tile a batch of windows opened together. */
+  rect?: WindowRect;
 }) {
   const key = input.dedupeKey ?? `${input.kind}:${JSON.stringify(input.payload ?? {})}`;
   const existing = state.windows.find((w) => w.id === key);
@@ -190,7 +193,7 @@ export function openWindow(input: {
     return key;
   }
 
-  const rect = placeWindow(input.kind, state.cascade);
+  const rect = input.rect ?? placeWindow(input.kind, state.cascade);
   const next: WindowState = {
     id: key,
     kind: input.kind,

@@ -13,7 +13,7 @@ const TailwindAdvancedEditor = dynamic(() => import("@/components/editor/advance
   ssr: false,
   loading: () => (
     <div className="flex h-full items-center justify-center">
-      <Loader2 className="h-5 w-5 animate-spin text-black/30 dark:text-stone-100/30" />
+      <Loader2 className="h-5 w-5 animate-spin text-black/30 dark:text-[#EDE7DD]/30" />
     </div>
   ),
 });
@@ -90,7 +90,7 @@ export function NoteWindow({
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-black/30 dark:text-stone-100/30" />
+        <Loader2 className="h-5 w-5 animate-spin text-black/30 dark:text-[#EDE7DD]/30" />
       </div>
     );
   }
@@ -98,13 +98,13 @@ export function NoteWindow({
   if (error) {
     return (
       <div className="flex h-full items-center justify-center px-6">
-        <p className="text-[12.5px] font-semibold text-black/50 dark:text-stone-100/50">{error}</p>
+        <p className="text-[12.5px] font-semibold text-black/50 dark:text-[#EDE7DD]/50">{error}</p>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full flex-col bg-white dark:bg-zinc-900">
+    <div className="flex h-full flex-col bg-white dark:bg-[#211e1a]">
       {/* Document header. Scrolls away with the content rather than sitting in
           a fixed bar: inside a window the title bar above already says which
           note this is, so a second pinned header wastes the little height a
@@ -116,11 +116,11 @@ export function NoteWindow({
         <div className="mx-auto w-full max-w-[46rem] px-8 pb-20 pt-8 sm:px-12 lg:px-14">
           <div className="flex items-center gap-2">
             {workspaceName && (
-              <span className="text-[10px] font-semibold uppercase tracking-[0.09em] text-black/35 dark:text-stone-100/35">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.09em] text-black/35 dark:text-[#EDE7DD]/35">
                 {workspaceName}
               </span>
             )}
-            {saving && <span className="text-[10px] font-medium text-black/25 dark:text-stone-100/25">Saving…</span>}
+            {saving && <span className="text-[10px] font-medium text-black/25 dark:text-[#EDE7DD]/25">Saving…</span>}
           </div>
 
           <input
@@ -131,7 +131,7 @@ export function NoteWindow({
             aria-label="Note title"
             className={cn(
               "mt-1.5 w-full bg-transparent text-[30px] font-bold leading-[1.15] tracking-[-0.03em] outline-none",
-              "text-black placeholder:text-black/20 dark:text-stone-100 dark:placeholder:text-stone-100/20",
+              "text-black placeholder:text-black/20 dark:text-[#EDE7DD] dark:placeholder:text-[#EDE7DD]/20",
             )}
           />
 
