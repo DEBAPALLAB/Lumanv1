@@ -32,7 +32,7 @@ const isDev = !app.isPackaged;
  * downloads an installer and signs in, full stop. Overridable at launch (env
  * var or config.json) so one binary can be pointed at staging.
  */
-const DEFAULT_SITE_URL = 'https://lumanv1.vercel.app';
+const DEFAULT_SITE_URL = 'https://luman.lucide.in';
 
 /**
  * Configuration the embedded server needs at launch, read from (in priority
