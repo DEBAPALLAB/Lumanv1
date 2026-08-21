@@ -28,7 +28,9 @@ export type WindowKind =
   | "whiteboard"
   | "voice"
   | "settings"
-  | "search";
+  | "search"
+  | "files"
+  | "media";
 
 export type WindowRect = { x: number; y: number; width: number; height: number };
 
@@ -113,6 +115,10 @@ const DEFAULT_SIZE: Record<WindowKind, { width: number; height: number }> = {
   voice: { width: 720, height: 560 },
   settings: { width: 620, height: 500 },
   search: { width: 640, height: 420 },
+  files: { width: 820, height: 600 },
+  // A document to read, so taller than wide. Images and video override this
+  // with an explicit rect when they open — see openFile in files-window.tsx.
+  media: { width: 760, height: 680 },
 };
 
 const CASCADE_STEP = 32;

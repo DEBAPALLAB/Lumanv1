@@ -600,6 +600,47 @@ header {
 }
 
 /* ==========================================================================
+   PDF text layer
+   pdf.js renders a transparent copy of the page's glyphs over the canvas so
+   text can be selected and highlighted. The spans must be invisible but
+   still selectable, which is what the transparent fill and the ::selection
+   rule below do — without them the layer either hides the page or cannot be
+   selected at all.
+   ========================================================================== */
+.pdf-text-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: 1;
+  line-height: 1;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+  z-index: 2;
+}
+.pdf-text-layer span,
+.pdf-text-layer br {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+}
+/* The selection tint is what the user actually sees while dragging across
+   text, since the glyphs themselves are transparent. */
+.pdf-text-layer ::selection {
+  background: rgba(127, 165, 196, 0.35);
+}
+.pdf-text-layer .endOfContent {
+  display: block;
+  position: absolute;
+  inset: 100% 0 0;
+  z-index: -1;
+  cursor: default;
+  user-select: none;
+}
+
+/* ==========================================================================
    Chat inside an OS window
    The v1 transcript is tuned for a full-width page: a fixed 32px timestamp
    gutter, page-sized row padding, and a hover toolbar that assumes there is

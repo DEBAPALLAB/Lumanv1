@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import {
   CalendarDays,
   CheckSquare,
+  FileText,
+  FolderOpen,
   LayoutGrid,
   type LucideIcon,
   MessageSquare,
@@ -26,6 +28,10 @@ export const KIND_ICON: Record<string, LucideIcon> = {
   voice: Phone,
   settings: Settings,
   search: Search,
+  files: FolderOpen,
+  // Not a launcher — media windows are opened from Files. Present so a
+  // minimised one still gets an icon on its blob.
+  media: FileText,
 };
 
 /**
@@ -77,6 +83,11 @@ export function Dock({ onSpotlight }: { onSpotlight: () => void }) {
     },
     { kind: "tasks", label: "My tasks", run: () => actions.open({ kind: "tasks", title: "My tasks" }) },
     { kind: "calendar", label: "Calendar", run: () => actions.open({ kind: "calendar", title: "Calendar" }) },
+    {
+      kind: "files",
+      label: "Files",
+      run: () => actions.open({ kind: "files", title: "Files", dedupeKey: "files" }),
+    },
   ];
 
   return (

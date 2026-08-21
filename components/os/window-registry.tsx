@@ -8,6 +8,8 @@ import { FileText, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CalendarWindow } from "./windows/calendar-window";
 import { ChatWindow } from "./windows/chat-window";
+import { FilesWindow } from "./windows/files-window";
+import { type MediaKind, MediaWindow } from "./windows/media-window";
 import { NoteWindow } from "./windows/note-window";
 import { TasksWindow } from "./windows/tasks-window";
 import { VoiceWindow } from "./windows/voice-window";
@@ -97,6 +99,21 @@ export function renderWindow(win: WindowState, ctx: DesktopContext) {
 
     case "calendar":
       return <CalendarWindow />;
+
+    case "files":
+      return <FilesWindow orgId={ctx.orgId} />;
+
+    case "media":
+      return (
+        <MediaWindow
+          url={String(payload.url)}
+          name={String(payload.name ?? win.title)}
+          kind={payload.kind as MediaKind}
+          fileId={payload.fileId ? String(payload.fileId) : null}
+          userId={ctx.userId}
+          displayName={ctx.displayName}
+        />
+      );
 
     default:
       return (

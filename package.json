@@ -4,6 +4,7 @@
   "private": true,
   "main": "electron/main.js",
   "scripts": {
+    "postinstall": "node scripts/copy-pdf-worker.js",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -141,6 +142,7 @@
     "next": "16.1.6",
     "next-themes": "^0.2.1",
     "openai": "^4.28.4",
+    "pdfjs-dist": "6.2.108",
     "react": "18.2.0",
     "react-day-picker": "^9.13.0",
     "react-dom": "18.2.0",
