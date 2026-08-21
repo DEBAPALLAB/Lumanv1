@@ -48,7 +48,7 @@ export async function POST(req: Request) {
 
       await addMemberToOrganization(org.id, user.id, "intern", assignedRoleId);
 
-      return withCors(apiSuccess({ success: true, slug: org.slug, loggedIn: true }));
+      return withCors(apiSuccess({ success: true, slug: org.slug, name: org.name, id: org.id, loggedIn: true }));
     }
 
     // If valid but not logged in, set a cookie to indicate pending join
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       maxAge: 60 * 10, // 10 minutes
     });
 
-    return withCors(apiSuccess({ success: true, slug: org.slug, loggedIn: false }));
+    return withCors(apiSuccess({ success: true, slug: org.slug, name: org.name, id: org.id, loggedIn: false }));
   } catch (error) {
     return withCors(apiError("Internal Server Error", 500));
   }

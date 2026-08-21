@@ -1,5 +1,10 @@
 import { apiError, apiSuccess } from "@/lib/api-response";
-import { addMemberToOrganization, getOrganizationBySlug, getOrganizationMembers } from "@/lib/db/organizations";
+import {
+  addMemberToOrganization,
+  getOrganizationBySlug,
+  getOrganizationMembers,
+  verifyFounderClaim,
+} from "@/lib/db/organizations";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 
@@ -25,14 +30,22 @@ export async function POST(req: Request) {
       return apiError("Organization not found", 404);
     }
 
-    // Smart Role Assignment
-    // Check if organization has any members
+    // Smart Role Assignment: an org with zero members grants Founder, but
+    // only to whoever holds the signed claim issued when that org was
+    // created (see issueFounderClaim) — otherwise anyone racing to register
+    // against a fresh, member-less org's slug would become its Founder.
+    const cookieStore = await cookies();
     const members = await getOrganizationMembers(organization.id);
-    const assignedRole = members.length === 0 ? "founder" : "intern";
+    const founderClaim = cookieStore.get("founder_claim")?.value;
+    const hasFounderClaim = !!founderClaim && verifyFounderClaim(founderClaim, organization.id);
+    const assignedRole = members.length === 0 && hasFounderClaim ? "founder" : "intern";
+
+    if (hasFounderClaim) {
+      cookieStore.delete("founder_claim");
+    }
 
     // Invite validation for existing organizations: require verified invite code
     if (assignedRole === "intern") {
-      const cookieStore = await cookies();
       const pendingOrg = cookieStore.get("pending_join_org")?.value;
       if (!pendingOrg || pendingOrg !== orgSlug) {
         return apiError("An invitation code is required to join this organization.", 403);

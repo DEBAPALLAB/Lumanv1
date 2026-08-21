@@ -18,6 +18,8 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Sparkles,
+  Shield,
+  UserPlus,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -380,12 +382,15 @@ export function WorkspaceSidebar({
   const tasksHref = orgSlug ? `/dashboard/tasks?org=${orgSlug}` : "/dashboard/tasks";
   const calendarHref = orgSlug ? `/calendar?org=${orgSlug}` : "/calendar";
   const chatHref = orgSlug ? `/messaging?org=${orgSlug}` : "/messaging";
+  const adminHref = orgSlug ? `/dashboard/admin?org=${orgSlug}` : "/dashboard/admin";
 
-  const isDashboardActive = pathname === "/dashboard" || pathname === "/" || (pathname.startsWith("/dashboard") && !pathname.startsWith("/dashboard/tasks"));
+  const isDashboardActive = pathname === "/dashboard" || pathname === "/" || (pathname.startsWith("/dashboard") && !pathname.startsWith("/dashboard/tasks") && !pathname.startsWith("/dashboard/admin"));
   const isTasksActive = pathname?.startsWith("/dashboard/tasks");
   const isCalendarActive = pathname?.startsWith("/calendar");
   const isChatActive = pathname?.startsWith("/messaging");
   const isSettingsActive = pathname?.startsWith("/settings");
+  const isAdminActive = pathname?.startsWith("/dashboard/admin");
+  const isFounderOrAdmin = membershipRole === "founder" || membershipRole === "admin";
  
   const filteredWorkspaces = workspaces.filter((w) => {
     const matchesSearch = w.owner_name.toLowerCase().includes(workspaceSearchQuery.toLowerCase());
@@ -513,6 +518,24 @@ export function WorkspaceSidebar({
               TEAM CHAT
             </div>
           </div>
+
+          {/* Admin & Invite Button (For Founders & Admins) */}
+          {isFounderOrAdmin && (
+            <div className="relative group">
+              <Link
+                href={adminHref}
+                className={cn(
+                  "flex items-center justify-center h-11 w-11 border-[3px] border-black dark:border-stone-100 rounded-full shadow-[2.5px_2.5px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2.5px_2.5px_0px_0px_rgba(255,255,255,1)] hover:shadow-none hover:translate-x-[1.5px] hover:translate-y-[1.5px] transition-all",
+                  isAdminActive ? "bg-[#FBBF24] text-black" : "bg-white dark:bg-zinc-900 text-black dark:text-stone-100"
+                )}
+              >
+                <Shield className="h-5 w-5" />
+              </Link>
+              <div className="absolute left-full ml-4 top-1/2 -translate-y-1/2 hidden group-hover:block z-50 bg-black text-[#FBBF24] border-2 border-black dark:border-stone-100 text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-md whitespace-nowrap shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)]">
+                ADMIN & INVITES
+              </div>
+            </div>
+          )}
 
           {/* Settings Button */}
           <div className="relative group">

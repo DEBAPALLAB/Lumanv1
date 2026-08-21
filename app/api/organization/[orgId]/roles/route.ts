@@ -70,18 +70,20 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ orgI
     const body = await req.json();
 
     if (body.roles && Array.isArray(body.roles)) {
-      // Reorder roles
-      const promises = body.roles.map(async (r: { id: string; hierarchy_level: number }) => {
-        return supabase.from("roles").update({ hierarchy_level: r.hierarchy_level }).eq("id", r.id).eq("organization_id", orgId);
+      // Reorder roles in one statement/transaction (see migration 018) so a
+      // swap between two levels never trips the UNIQUE(organization_id,
+      // hierarchy_level) constraint mid-batch the way independent
+      // per-role updates did.
+      const { data, error } = await supabase.rpc("reorder_roles", {
+        p_org_id: orgId,
+        p_roles: body.roles,
       });
 
-      const results = await Promise.all(promises);
-      const firstError = results.find((res) => res.error);
-      if (firstError) {
-        return apiError(firstError.error?.message ?? "Failed to reorder roles", 500);
+      if (error) {
+        return apiError(error.message ?? "Failed to reorder roles", 500);
       }
 
-      return apiSuccess({ success: true });
+      return apiSuccess(data);
     }
     // Single role update
     const { roleId, role_name, hierarchy_level } = body;

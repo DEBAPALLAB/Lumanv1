@@ -181,6 +181,81 @@ export function useOrgData() {
   }, []);
 
   /**
+   * Creates a workspace and appends it to local state immediately — every
+   * workspace picker (dock flyout, spotlight) reads off `workspaces` here, so
+   * without this they'd stay stale until a full reload.
+   */
+  const createWorkspace = useCallback(
+    async (ownerName: string, opts?: { color?: string; folderId?: string | null }) => {
+      if (!orgId || !userId) throw new Error("Organization not resolved yet");
+
+      const res = await fetch("/api/workspaces", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ownerName,
+          ownerId: orgId,
+          color: opts?.color,
+          folderId: opts?.folderId,
+        }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error ?? "Failed to create workspace");
+      }
+
+      const workspace = (await res.json()) as Workspace;
+      setWorkspaces((prev) => [...prev, workspace]);
+      return workspace;
+    },
+    [orgId, userId],
+  );
+
+  /**
+   * Creates a note in a workspace and merges it into the cached note list for
+   * that workspace, matching the "Custom" blank-template contract the v1
+   * note-creation modal uses (see components/editor/note-modal.tsx).
+   */
+  const createNote = useCallback(async (workspaceId: string, title: string) => {
+    const res = await fetch("/api/notes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ workspaceId, title, templateType: "Custom" }),
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      throw new Error(body?.error ?? "Failed to create note");
+    }
+
+    const note = (await res.json()) as Note;
+    setNotesByWorkspace((prev) => ({
+      ...prev,
+      // Cache may not be warm yet (e.g. creating from the flyout before the
+      // notes level has loaded) — fall back to just this note rather than
+      // dropping it.
+      [workspaceId]: [note, ...(prev[workspaceId] ?? [])],
+    }));
+    return note;
+  }, []);
+
+  /** Deletes a note and drops it from the cached list for its workspace. */
+  const deleteNote = useCallback(async (workspaceId: string, noteId: string) => {
+    const res = await fetch(`/api/notes/${noteId}`, { method: "DELETE" });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      throw new Error(body?.error ?? "Failed to delete note");
+    }
+
+    setNotesByWorkspace((prev) => ({
+      ...prev,
+      [workspaceId]: (prev[workspaceId] ?? []).filter((n) => n.id !== noteId),
+    }));
+  }, []);
+
+  /**
    * Notes for one workspace, fetched on demand and cached.
    *
    * Lazy rather than eager: a user with fifteen workspaces should not pay
@@ -275,6 +350,9 @@ export function useOrgData() {
     rooms,
     notesByWorkspace,
     loadNotes,
+    createWorkspace,
+    createNote,
+    deleteNote,
     refreshBoards,
     refreshRooms,
     onRoomOpened,

@@ -3,10 +3,11 @@
 import AppShell, { useGodMode } from "@/components/layouts/app-shell";
 import OnboardingModal from "@/components/editor/onboarding-modal";
 import type { Organization } from "@/types/organization";
-import { ArrowRight, Calendar, FileText, Grid3X3, Search, Sparkles, Trash2 } from "lucide-react";
+import { ArrowRight, Calendar, Check, Copy, FileText, Grid3X3, Search, Sparkles, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 type Workspace = {
   id: string;
@@ -118,6 +119,7 @@ function DashboardContent() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [session, setSession] = useState<UserSession | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [copiedInvite, setCopiedInvite] = useState(false);
   const [viewDensity, setViewDensity] = useState<2 | 3 | 4>(2);
   const [sortBy, setSortBy] = useState<"name" | "date">("name");
   const [events, setEvents] = useState<DashboardEvent[]>([]);
@@ -276,7 +278,7 @@ function DashboardContent() {
     }
   }
 
-  async function handleCreateWorkspace(nameToCreate?: string) {
+  async function handleCreateWorkspace(nameToCreate?: string, colorToCreate?: string) {
     const name = nameToCreate || prompt("Enter workspace owner name:");
     if (!name || !session) return;
 
@@ -293,7 +295,12 @@ function DashboardContent() {
       const res = await fetch("/api/workspaces", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ownerName: name, role: "intern", ownerId: currentOrg.id }),
+        body: JSON.stringify({
+          ownerName: name,
+          role: "intern",
+          ownerId: currentOrg.id,
+          color: colorToCreate || "stone",
+        }),
       });
 
       if (res.ok) {
@@ -450,9 +457,33 @@ function DashboardContent() {
                     {session.ownerName}
                   </span>
                   {(session.role?.toLowerCase() === "founder" || session.role?.toLowerCase() === "admin") && currentOrg?.invitation_code && (
-                    <span className="px-3.5 py-1.5 text-xs font-black uppercase tracking-widest border-[3px] border-black dark:border-stone-100 bg-[#A7F3D0] text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)] rounded-full">
-                      INVITE: {currentOrg.invitation_code}
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!currentOrg?.slug || !currentOrg?.invitation_code) return;
+                        const inviteUrl = `${window.location.origin}/join?org=${currentOrg.slug}&code=${currentOrg.invitation_code}`;
+                        navigator.clipboard.writeText(inviteUrl);
+                        setCopiedInvite(true);
+                        toast.success("Invite link copied to clipboard!", {
+                          description: `Share this link with teammates to join ${currentOrg.name}`,
+                        });
+                        setTimeout(() => setCopiedInvite(false), 2000);
+                      }}
+                      title="Click to copy 1-click shareable invite link"
+                      className="group inline-flex items-center gap-2 px-3.5 py-1.5 text-xs font-black uppercase tracking-widest border-[3px] border-black dark:border-stone-100 bg-[#A7F3D0] hover:bg-[#6EE7B7] text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] rounded-full transition-all cursor-pointer select-none"
+                    >
+                      {copiedInvite ? (
+                        <>
+                          <Check className="h-3.5 w-3.5 stroke-[3] text-emerald-800" />
+                          <span>COPIED!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3.5 w-3.5 stroke-[2.5]" />
+                          <span>INVITE: {currentOrg.invitation_code}</span>
+                        </>
+                      )}
+                    </button>
                   )}
                 </div>
                 <h1 className="text-4xl md:text-5xl font-black uppercase tracking-wide text-black dark:text-stone-100">Welcome to Luman</h1>
@@ -924,7 +955,13 @@ function DashboardContent() {
         </div>
       </div>
 
-      <OnboardingModal isOpen={showOnboarding} onSubmit={handleCreateWorkspace} />
+      <OnboardingModal
+        isOpen={showOnboarding}
+        onSubmit={handleCreateWorkspace}
+        orgSlug={currentOrg?.slug}
+        orgName={currentOrg?.name}
+        invitationCode={currentOrg?.invitation_code}
+      />
     </AppShell>
   );
 }

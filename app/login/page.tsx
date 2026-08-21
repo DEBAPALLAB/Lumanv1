@@ -11,13 +11,18 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const orgSlug = searchParams.get("org");
   const registered = searchParams.get("registered");
+  const urlInvite = searchParams.get("invite") || searchParams.get("code") || "";
 
   const [orgName, setOrgName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [inviteCode, setInviteCode] = useState("");
+  const [inviteCode, setInviteCode] = useState(urlInvite);
 
   useEffect(() => {
+    if (urlInvite) {
+      setInviteCode(urlInvite.toUpperCase());
+    }
+
     // Get organization name from session storage
     const storedOrgName = sessionStorage.getItem("selected_org_name");
     if (storedOrgName) {

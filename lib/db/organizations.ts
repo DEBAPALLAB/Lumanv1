@@ -1,3 +1,4 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Organization, OrganizationMember } from "@/types/organization";
 
@@ -9,6 +10,41 @@ export function generateSlug(name: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+/**
+ * When POST /api/auth/org is called anonymously (the legitimate "create an
+ * org, then register" flow for a brand-new user), the org is created with
+ * zero members. Without proof of who ran that step, ANY subsequent stranger
+ * registering against that slug would be granted Founder — the org-creation
+ * step and the founder-claiming step were unlinked. This issues a signed,
+ * short-lived claim naming the exact org just created, which register/route.ts
+ * must present to be granted Founder instead of Intern. Reuses the service
+ * role key as the HMAC secret rather than adding a new env var: it's already
+ * server-only (lib/server/delegate.ts never ships it to desktop builds), so
+ * it's available wherever this needs to run without new deployment config.
+ */
+const FOUNDER_CLAIM_TTL_MS = 10 * 60 * 1000;
+
+export function issueFounderClaim(organizationId: string): string {
+  const expires = Date.now() + FOUNDER_CLAIM_TTL_MS;
+  const payload = `${organizationId}.${expires}`;
+  const sig = createHmac("sha256", process.env.SUPABASE_SERVICE_ROLE_KEY!).update(payload).digest("hex");
+  return `${payload}.${sig}`;
+}
+
+export function verifyFounderClaim(claim: string, organizationId: string): boolean {
+  const parts = claim.split(".");
+  if (parts.length !== 3) return false;
+  const [claimedOrgId, expiresStr, sig] = parts;
+  const expires = Number(expiresStr);
+  if (claimedOrgId !== organizationId || !Number.isFinite(expires) || Date.now() > expires) return false;
+
+  const payload = `${claimedOrgId}.${expiresStr}`;
+  const expectedSig = createHmac("sha256", process.env.SUPABASE_SERVICE_ROLE_KEY!).update(payload).digest("hex");
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expectedSig);
+  return a.length === b.length && timingSafeEqual(new Uint8Array(a), new Uint8Array(b));
 }
 
 /**

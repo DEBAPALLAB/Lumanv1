@@ -1,6 +1,7 @@
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { getSession } from "@/lib/auth/session";
-import { createOrganization, getOrganizations } from "@/lib/db/organizations";
+import { createOrganization, getOrganizations, issueFounderClaim } from "@/lib/db/organizations";
+import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 
 // GET /api/auth/org - List all organizations
@@ -27,6 +28,20 @@ export async function POST(req: NextRequest) {
     const creatorUserId = session ? session.user.id : undefined;
 
     const organization = await createOrganization(name.trim(), creatorUserId, hierarchyType, customRoles);
+
+    // Anonymous creation: this org has zero members, and register/route.ts
+    // grants Founder to whoever registers against its slug first. Bind that
+    // grant to this request via a short-lived signed cookie so a stranger
+    // can't race the real creator to claim Founder on an org they just made.
+    if (!session) {
+      const cookieStore = await cookies();
+      cookieStore.set("founder_claim", issueFounderClaim(organization.id), {
+        path: "/",
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 60 * 10,
+      });
+    }
 
     return apiSuccess(
       {

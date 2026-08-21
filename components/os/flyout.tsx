@@ -10,6 +10,7 @@ import {
   Folder as FolderIcon,
   Hash,
   Layers,
+  type LucideIcon,
   PenTool,
   Phone,
   Plus,
@@ -39,6 +40,8 @@ export function Flyout({
   boards,
   rooms,
   loadNotes,
+  createWorkspace,
+  createNote,
   onOpenBoard,
   onStartCall,
   loading,
@@ -49,6 +52,8 @@ export function Flyout({
   boards: Board[];
   rooms: VoiceRoom[];
   loadNotes: (workspaceId: string) => Promise<Note[]>;
+  createWorkspace: (ownerName: string) => Promise<Workspace>;
+  createNote: (workspaceId: string, title: string) => Promise<Note>;
   onOpenBoard: (scope: "organization" | "workspace", workspaceId?: string) => void;
   onStartCall: (scope: "organization" | "workspace", workspaceId?: string) => void;
   loading: boolean;
@@ -61,6 +66,10 @@ export function Flyout({
   const [notes, setNotes] = useState<Note[] | null>(null);
   const [notesLoading, setNotesLoading] = useState(false);
   const [query, setQuery] = useState("");
+  const [creatingWorkspace, setCreatingWorkspace] = useState(false);
+  const [creatingWorkspaceBusy, setCreatingWorkspaceBusy] = useState(false);
+  const [creatingNote, setCreatingNote] = useState(false);
+  const [creatingNoteBusy, setCreatingNoteBusy] = useState(false);
 
   const kind = desktop.flyout;
 
@@ -70,7 +79,41 @@ export function Flyout({
     setDrilled(null);
     setNotes(null);
     setQuery("");
+    setCreatingWorkspace(false);
+    setCreatingNote(false);
   }, [kind]);
+
+  // Leaving a workspace's notes level cancels an in-progress "new note" —
+  // it belongs to the workspace being drilled into, not the panel overall.
+  useEffect(() => {
+    setCreatingNote(false);
+  }, [drilled]);
+
+  async function handleCreateWorkspace(ownerName: string) {
+    setCreatingWorkspaceBusy(true);
+    try {
+      await createWorkspace(ownerName);
+      setCreatingWorkspace(false);
+    } catch {
+      // Left open so the user can retry with the same typed name.
+    } finally {
+      setCreatingWorkspaceBusy(false);
+    }
+  }
+
+  async function handleCreateNote(title: string) {
+    if (!drilled) return;
+    setCreatingNoteBusy(true);
+    try {
+      const note = await createNote(drilled.id, title);
+      setNotes((prev) => [note, ...(prev ?? [])]);
+      setCreatingNote(false);
+    } catch {
+      // Left open so the user can retry with the same typed title.
+    } finally {
+      setCreatingNoteBusy(false);
+    }
+  }
 
   useEffect(() => {
     if (!drilled) return;
@@ -231,6 +274,11 @@ export function Flyout({
               workspace={drilled}
               notes={filteredNotes}
               loading={notesLoading}
+              creating={creatingNote}
+              creatingBusy={creatingNoteBusy}
+              onStartCreate={() => setCreatingNote(true)}
+              onCommitCreate={handleCreateNote}
+              onCancelCreate={() => setCreatingNote(false)}
               onOpenNote={(note) =>
                 actions.open({
                   kind: "note",
@@ -249,7 +297,16 @@ export function Flyout({
               }
             />
           ) : kind === "workspaces" ? (
-            <WorkspacesLevel folders={folders} workspaces={filteredWorkspaces} onDrill={setDrilled} />
+            <WorkspacesLevel
+              folders={folders}
+              workspaces={filteredWorkspaces}
+              onDrill={setDrilled}
+              creating={creatingWorkspace}
+              creatingBusy={creatingWorkspaceBusy}
+              onStartCreate={() => setCreatingWorkspace(true)}
+              onCommitCreate={handleCreateWorkspace}
+              onCancelCreate={() => setCreatingWorkspace(false)}
+            />
           ) : kind === "boards" ? (
             <BoardsLevel boards={boards} workspaces={workspaces} onOpenBoard={onOpenBoard} />
           ) : kind === "calls" ? (
@@ -288,20 +345,27 @@ function SkeletonRows() {
   );
 }
 
-/** Matches the 1..80 CHECK on board and channel names. */
+/** UX cap for names typed in the flyout — 80 chars matches the DB CHECK on
+ * board and channel names; workspace and note titles have no DB-side limit,
+ * but the same cap keeps this one field's behaviour uniform regardless of
+ * what it's naming. */
 const NAME_MAX = 80;
 
 /**
- * Inline "new board" field.
+ * Inline "new <thing>" field, generic over what it's naming.
  *
  * Commits on Enter or blur, dismisses on Escape — as cheap to use as a prompt()
  * while being stylable and able to show its own validation.
  */
 function InlineNameField({
+  icon: Icon = PenTool,
+  placeholder = "Board name",
   onCommit,
   onCancel,
   busy,
 }: {
+  icon?: LucideIcon;
+  placeholder?: string;
   onCommit: (name: string) => void;
   onCancel: () => void;
   busy: boolean;
@@ -325,7 +389,7 @@ function InlineNameField({
   return (
     <div className="flex items-center gap-2 px-2 py-1">
       <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[6px] bg-black/[0.05] dark:bg-[#EDE7DD]/[0.08]">
-        <PenTool className="h-3.5 w-3.5 text-black/35 dark:text-[#EDE7DD]/35" strokeWidth={2.5} />
+        <Icon className="h-3.5 w-3.5 text-black/35 dark:text-[#EDE7DD]/35" strokeWidth={2.5} />
       </span>
       <input
         ref={inputRef}
@@ -345,8 +409,8 @@ function InlineNameField({
             onCancel();
           }
         }}
-        placeholder="Board name"
-        aria-label="New board name"
+        placeholder={placeholder}
+        aria-label={placeholder}
         className={cn(
           "min-w-0 flex-1 rounded-[6px] bg-black/[0.045] px-2 py-1 text-[12px] font-medium outline-none",
           "text-black placeholder:text-black/30 ring-1 ring-inset ring-transparent focus:ring-black/50",
@@ -361,6 +425,18 @@ const ROW = cn(
   "group flex w-full items-center gap-2.5 rounded-[8px] px-2 py-2 text-left",
   "transition-colors duration-150 hover:bg-black/[0.055] dark:hover:bg-[#EDE7DD]/[0.08]",
 );
+
+/** The row that turns into an InlineNameField once clicked. */
+function NewRow({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className={cn(ROW, "mb-1")}>
+      <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[6px] bg-[#FBBF24] ring-1 ring-inset ring-black/15">
+        <Plus className="h-3.5 w-3.5 text-black" strokeWidth={3} />
+      </span>
+      <span className="text-[12.5px] font-bold text-black dark:text-[#EDE7DD]">{label}</span>
+    </button>
+  );
+}
 
 /**
  * Palette for workspaces whose stored colour is missing or white.
@@ -386,19 +462,39 @@ function WorkspacesLevel({
   folders,
   workspaces,
   onDrill,
+  creating,
+  creatingBusy,
+  onStartCreate,
+  onCommitCreate,
+  onCancelCreate,
 }: {
   folders: Folder[];
   workspaces: Workspace[];
   onDrill: (workspace: Workspace) => void;
+  creating: boolean;
+  creatingBusy: boolean;
+  onStartCreate: () => void;
+  onCommitCreate: (name: string) => void;
+  onCancelCreate: () => void;
 }) {
   const unfiled = workspaces.filter((w) => !w.folder_id);
 
-  if (workspaces.length === 0) {
-    return <Empty label="No workspaces yet" />;
-  }
-
   return (
     <div className="space-y-0.5">
+      {creating ? (
+        <InlineNameField
+          icon={Layers}
+          placeholder="Workspace name"
+          onCommit={onCommitCreate}
+          onCancel={onCancelCreate}
+          busy={creatingBusy}
+        />
+      ) : (
+        <NewRow label="New workspace" onClick={onStartCreate} />
+      )}
+
+      {workspaces.length === 0 && <Empty label="No workspaces yet" />}
+
       {folders.map((folder) => {
         const inFolder = workspaces.filter((w) => w.folder_id === folder.id);
         if (inFolder.length === 0) return null;
@@ -463,12 +559,22 @@ function NotesLevel({
   workspace,
   notes,
   loading,
+  creating,
+  creatingBusy,
+  onStartCreate,
+  onCommitCreate,
+  onCancelCreate,
   onOpenNote,
   onOpenWorkspace,
 }: {
   workspace: Workspace;
   notes: Note[];
   loading: boolean;
+  creating: boolean;
+  creatingBusy: boolean;
+  onStartCreate: () => void;
+  onCommitCreate: (title: string) => void;
+  onCancelCreate: () => void;
   onOpenNote: (note: Note) => void;
   onOpenWorkspace: () => void;
 }) {
@@ -482,6 +588,18 @@ function NotesLevel({
         </span>
         <span className="text-[12.5px] font-bold text-black dark:text-[#EDE7DD]">Open workspace</span>
       </button>
+
+      {creating ? (
+        <InlineNameField
+          icon={FileText}
+          placeholder="Note title"
+          onCommit={onCommitCreate}
+          onCancel={onCancelCreate}
+          busy={creatingBusy}
+        />
+      ) : (
+        <NewRow label="New note" onClick={onStartCreate} />
+      )}
 
       <div className="mx-2 mb-1 h-px bg-black/10 dark:bg-[#EDE7DD]/10" />
 

@@ -29,6 +29,8 @@ export type DesktopContext = {
   directory: AuthorDirectory;
   workspaces: Workspace[];
   loadNotes: (workspaceId: string) => Promise<Note[]>;
+  createNote: (workspaceId: string, title: string) => Promise<Note>;
+  deleteNote: (workspaceId: string, noteId: string) => Promise<void>;
   /** The caller's own name, shown on their chip in a voice room. */
   displayName: string;
 };
@@ -71,6 +73,8 @@ export function renderWindow(win: WindowState, ctx: DesktopContext) {
           workspaceId={id}
           workspace={ctx.workspaces.find((w) => w.id === id)}
           loadNotes={ctx.loadNotes}
+          createNote={ctx.createNote}
+          deleteNote={ctx.deleteNote}
         />
       );
     }

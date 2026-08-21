@@ -41,6 +41,9 @@ export function Desktop() {
     rooms,
     notesByWorkspace,
     loadNotes,
+    createWorkspace,
+    createNote,
+    deleteNote,
     refreshBoards,
     refreshRooms,
     onRoomOpened,
@@ -103,8 +106,8 @@ export function Desktop() {
   }, [directory, userId]);
 
   const ctx: DesktopContext = useMemo(
-    () => ({ orgId, orgSlug, userId, directory, workspaces, loadNotes, displayName }),
-    [orgId, orgSlug, userId, directory, workspaces, loadNotes, displayName],
+    () => ({ orgId, orgSlug, userId, directory, workspaces, loadNotes, createNote, deleteNote, displayName }),
+    [orgId, orgSlug, userId, directory, workspaces, loadNotes, createNote, deleteNote, displayName],
   );
 
   /**
@@ -335,6 +338,8 @@ export function Desktop() {
         boards={boards}
         rooms={rooms}
         loadNotes={loadNotes}
+        createWorkspace={createWorkspace}
+        createNote={createNote}
         onOpenBoard={(scope, workspaceId) => void openBoard(scope, workspaceId)}
         onStartCall={(scope, workspaceId) => void startCall(scope, workspaceId)}
         loading={loading}
