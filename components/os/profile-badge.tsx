@@ -4,8 +4,9 @@ import type { Identity } from "@/lib/os/use-org-data";
 import { useDesktopActions } from "@/lib/os/window-store";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
-import { LogOut, Moon, Settings, ShieldCheck, Sun } from "lucide-react";
+import { LayoutDashboard, LogOut, Moon, Settings, ShieldCheck, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 /** Initials from a name or email, for the avatar glyph. */
@@ -32,11 +33,12 @@ function roleLabel(role: string | null) {
  * dock's flyouts — a small button that opens a lightweight panel beside it,
  * rather than a window competing for a spot in the pill tray.
  */
-export function ProfileBadge({ identity }: { identity: Identity }) {
+export function ProfileBadge({ identity, orgSlug }: { identity: Identity; orgSlug: string | null }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const { theme, setTheme } = useTheme();
   const actions = useDesktopActions();
+  const router = useRouter();
 
   // next-themes can't know the persisted theme until after mount (it reads
   // localStorage client-side only) — theme is undefined on the server and on
@@ -172,6 +174,22 @@ export function ProfileBadge({ identity }: { identity: Identity }) {
                   )}
                 />
               </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                router.push(`/dashboard${orgSlug ? `?org=${orgSlug}` : ""}`);
+              }}
+              className={cn(
+                "flex w-full items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-left text-[12px] font-semibold text-black",
+                "transition-colors duration-150 hover:bg-black/[0.06]",
+                "dark:text-[#EDE7DD] dark:hover:bg-[#EDE7DD]/[0.08]",
+              )}
+            >
+              <LayoutDashboard className="h-4 w-4 text-black/50 dark:text-[#EDE7DD]/50" strokeWidth={2.25} />
+              Back to Dashboard
             </button>
 
             <button

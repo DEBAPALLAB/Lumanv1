@@ -56,25 +56,40 @@ function WorkspaceContent() {
           return;
         }
 
-        const [notesRes, workspaceRes, sessionRes] = await Promise.all([
+        const [notesRes, workspaceRes] = await Promise.all([
           fetch(`/api/notes?workspaceId=${workspaceId}`),
           supabase.from("workspaces").select("owner_name, color, role, owner_id, created_by, organization_id, folder_id").eq("id", workspaceId).single(),
-          fetch(`/api/auth/session${orgSlug ? `?org=${orgSlug}` : ""}`),
         ]);
 
         const notesData = await notesRes.json();
         const ws = workspaceRes.data;
-        const sessionData = sessionRes.ok ? await sessionRes.json() : null;
-        const userRole = sessionData?.user?.role || "intern";
-
-        if (sessionData?.user) {
-          setSessionUser({
-            userId: sessionData.user.userId,
-            role: sessionData.user.role,
-          });
-        }
 
         if (!active) return;
+
+        // Role for THIS workspace's own organization, queried directly rather
+        // than through /api/auth/session?org=<url-supplied slug> — that slug
+        // comes from the URL and, on mismatch, silently resolved to the
+        // caller's role in a different org than the one this workspace
+        // belongs to, which let the checks below compare against the wrong
+        // membership entirely.
+        let userRole = "intern";
+        if (ws?.organization_id) {
+          const { data: membership } = await supabase
+            .from("organization_members")
+            .select("role")
+            .eq("organization_id", ws.organization_id)
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          if (!membership) {
+            alert("You are not a member of the organization this workspace belongs to.");
+            router.push(`/dashboard${orgSlug ? `?org=${orgSlug}` : ""}`);
+            return;
+          }
+          userRole = membership.role;
+        }
+
+        setSessionUser({ userId: user.id, role: userRole });
 
         if (ws) {
           const isRestricted =

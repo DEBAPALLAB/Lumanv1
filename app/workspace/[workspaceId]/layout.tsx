@@ -28,8 +28,35 @@ export default async function WorkspaceLayout({
   if (wsData?.organization_id) {
     const membership = await getMembership(wsData.organization_id, user.id);
 
+    // A workspace belongs to exactly one organization. Regardless of the
+    // workspace's own visibility tier, someone with no membership row in
+    // that organization has no business here at all — checking only the
+    // founder-tier case below let a non-member straight into any
+    // intern/admin-tier workspace as long as they had (or guessed) its id.
+    if (!membership) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background p-8">
+          <div className="max-w-2xl w-full border-brutal-thick shadow-brutal p-12 space-y-8 bg-card text-center">
+            <h1 className="text-6xl font-black uppercase text-destructive">403</h1>
+            <h2 className="text-2xl font-black uppercase tracking-tight">Access Denied</h2>
+            <p className="text-lg font-bold uppercase opacity-70">
+              You are not a member of the organization this workspace belongs to.
+            </p>
+            <div className="pt-8">
+              <Link
+                href="/dashboard"
+                className="inline-block px-8 py-4 text-lg font-black uppercase border-brutal hover-brutal bg-foreground text-background"
+              >
+                RETURN TO DASHBOARD
+              </Link>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     // Strict restriction: If workspace is "founder" and user is "intern", block completely.
-    if (wsData.role === "founder" && membership?.role === "intern") {
+    if (wsData.role === "founder" && membership.role === "intern") {
       return (
         <div className="min-h-screen flex items-center justify-center bg-background p-8">
           <div className="max-w-2xl w-full border-brutal-thick shadow-brutal p-12 space-y-8 bg-card text-center">

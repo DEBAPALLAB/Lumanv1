@@ -115,7 +115,6 @@ export default function AppShell({
               onToggleWorkspaces={handleToggleWorkspaces}
               isNotePage={isNotePage}
               isNotesCollapsedOnNotePage={!isWorkspacesExpanded}
-              onGodMode={enterGodMode}
             />
           </div>
 

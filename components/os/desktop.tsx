@@ -441,7 +441,7 @@ export function Desktop() {
 
       <MinimizedBlobs />
 
-      <ProfileBadge identity={identity} />
+      <ProfileBadge identity={identity} orgSlug={orgSlug} />
 
       <Dock
         onSpotlight={() => setSpotlightOpen(true)}
