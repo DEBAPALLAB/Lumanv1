@@ -155,7 +155,7 @@ export async function POST(req: Request) {
         workspace_id: workspaceId,
         title,
         template_type: templateType,
-        content: { type: "doc", content: [] },
+        content: { type: "doc", content: [{ type: "paragraph" }] },
         visibility_mode: visibilityMode,
         minimum_visible_role_level: minimumVisibleRoleLevel,
         specific_role_ids: specificRoleIds,

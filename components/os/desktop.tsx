@@ -5,13 +5,17 @@ import { useBaseLayout } from "@/lib/os/use-base-layout";
 import { useOrgData } from "@/lib/os/use-org-data";
 import { useDesktop, useDesktopActions } from "@/lib/os/window-store";
 import { cn } from "@/lib/utils";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import type { Candidate } from "@/lib/voice/resolve";
+import { useTheme } from "next-themes";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Dock } from "./dock";
 import { Flyout } from "./flyout";
 import { MinimizedBlobs } from "./minimized-blobs";
 import { ProfileBadge } from "./profile-badge";
 import { Spotlight, type SpotlightItem } from "./spotlight";
+import { VoiceAgent, type VoiceAgentContext } from "./voice-agent";
+import { VoiceHud } from "./voice-hud";
 import { WindowFrame } from "./window-frame";
 import { type DesktopContext, renderWindow } from "./window-registry";
 
@@ -27,7 +31,9 @@ export function Desktop() {
   const desktop = useDesktop();
   const actions = useDesktopActions();
   const [spotlightOpen, setSpotlightOpen] = useState(false);
+  const [agentOpen, setAgentOpen] = useState(false);
   const [directory, setDirectory] = useState<AuthorDirectory>({});
+  const { setTheme } = useTheme();
 
   const {
     orgId,
@@ -42,6 +48,7 @@ export function Desktop() {
     notesByWorkspace,
     loadNotes,
     createWorkspace,
+    deleteWorkspace,
     createNote,
     deleteNote,
     refreshBoards,
@@ -81,7 +88,9 @@ export function Desktop() {
   }, [orgId]);
 
   // Global shortcuts. Cmd/Ctrl+K opens search from anywhere, which is the one
-  // binding people already expect; Cmd+D shows the desktop.
+  // binding people already expect; Cmd+D shows the desktop; Cmd+J starts
+  // talking to the agent. J because K and D are taken and it sits under the
+  // same hand — the agent has to be one keystroke away or people click instead.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
@@ -92,6 +101,10 @@ export function Desktop() {
       if (mod && e.key.toLowerCase() === "d") {
         e.preventDefault();
         actions.minimizeAll();
+      }
+      if (mod && e.key.toLowerCase() === "j") {
+        e.preventDefault();
+        setAgentOpen((open) => !open);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -106,8 +119,34 @@ export function Desktop() {
   }, [directory, userId]);
 
   const ctx: DesktopContext = useMemo(
-    () => ({ orgId, orgSlug, userId, directory, workspaces, loadNotes, createNote, deleteNote, displayName }),
-    [orgId, orgSlug, userId, directory, workspaces, loadNotes, createNote, deleteNote, displayName],
+    () => ({
+      orgId,
+      orgSlug,
+      userId,
+      directory,
+      workspaces,
+      loadNotes,
+      createWorkspace,
+      deleteWorkspace,
+      createNote,
+      deleteNote,
+      displayName,
+      identity,
+    }),
+    [
+      orgId,
+      orgSlug,
+      userId,
+      directory,
+      workspaces,
+      loadNotes,
+      createWorkspace,
+      deleteWorkspace,
+      createNote,
+      deleteNote,
+      displayName,
+      identity,
+    ],
   );
 
   /**
@@ -278,6 +317,74 @@ export function Desktop() {
     return items;
   }, [notesByWorkspace, workspaces, channels, boards]);
 
+  /**
+   * Everything the voice agent can address, derived from the same index the
+   * palette searches.
+   *
+   * Reusing spotlightItems rather than building a second list is deliberate:
+   * two independently maintained indexes would drift, and then the agent would
+   * be unable to open something the palette can find, for no reason a user
+   * could ever guess. "Searchable" and "sayable" should mean the same thing.
+   *
+   * The `search` kind is dropped — it is a palette affordance, not an object.
+   */
+  const agentCandidates: Candidate[] = useMemo(
+    () =>
+      spotlightItems
+        .filter((item) => item.kind !== "search" && item.kind !== "media")
+        .map((item) => ({
+          id: item.id,
+          title: item.title,
+          target: item.kind as Candidate["target"],
+          payload: item.payload,
+          hint: item.hint,
+        })),
+    [spotlightItems],
+  );
+
+  /**
+   * The desktop as the model sees it.
+   *
+   * Titles and ids only — never note contents. The agent needs to know that a
+   * note called "Q3 Roadmap" exists in order to open it; it has no reason to
+   * know what is inside, and sending bodies would mean shipping the user's
+   * writing to a model on every spoken command.
+   */
+  const agentSnapshot = useMemo(() => {
+    const grouped: Record<string, { id: string; title: string; hint?: string }[]> = {};
+    for (const candidate of agentCandidates) {
+      if (!grouped[candidate.target]) grouped[candidate.target] = [];
+      grouped[candidate.target].push({
+        id: candidate.id,
+        title: candidate.title,
+        hint: candidate.hint,
+      });
+    }
+    return grouped;
+  }, [agentCandidates]);
+
+  /**
+   * Read through a ref rather than passed as a value.
+   *
+   * The agent asks for context at the moment it runs a plan, not at the moment
+   * it rendered. A command spoken now must act on the windows that are open
+   * now — capturing the list at render time would close a window that was
+   * already gone, or miss one opened by the previous sentence in the same breath.
+   */
+  const agentContextRef = useRef<VoiceAgentContext>(null as unknown as VoiceAgentContext);
+  agentContextRef.current = {
+    candidates: agentCandidates,
+    snapshot: agentSnapshot,
+    openWindows: desktop.windows.map((w) => ({ id: w.id, kind: w.kind, title: w.title })),
+    createNote,
+    deleteNote,
+    defaultWorkspaceId: workspaces[0]?.id ?? null,
+    openSearch: () => setSpotlightOpen(true),
+    setTheme,
+  };
+
+  const getAgentContext = useCallback(() => agentContextRef.current, []);
+
   const visible = desktop.windows.filter((w) => !w.minimized);
 
   if (error) {
@@ -315,6 +422,13 @@ export function Desktop() {
               </kbd>{" "}
               to search.
             </p>
+            <p className="mt-2 text-[11.5px] text-black/30 dark:text-[#EDE7DD]/25">
+              Hold{" "}
+              <kbd className="rounded-[4px] border-[1.5px] border-black/25 px-1.5 py-0.5 font-mono text-[10.5px] font-semibold dark:border-[#EDE7DD]/25">
+                Ctrl + Space
+              </kbd>{" "}
+              to talk directly to the agent.
+            </p>
           </div>
         </div>
       )}
@@ -329,7 +443,11 @@ export function Desktop() {
 
       <ProfileBadge identity={identity} />
 
-      <Dock onSpotlight={() => setSpotlightOpen(true)} />
+      <Dock
+        onSpotlight={() => setSpotlightOpen(true)}
+        onVoiceAgent={() => setAgentOpen((open) => !open)}
+        agentActive={agentOpen}
+      />
 
       <Flyout
         workspaces={workspaces}
@@ -339,13 +457,18 @@ export function Desktop() {
         rooms={rooms}
         loadNotes={loadNotes}
         createWorkspace={createWorkspace}
+        deleteWorkspace={deleteWorkspace}
         createNote={createNote}
+        deleteNote={deleteNote}
         onOpenBoard={(scope, workspaceId) => void openBoard(scope, workspaceId)}
         onStartCall={(scope, workspaceId) => void startCall(scope, workspaceId)}
         loading={loading}
       />
 
       <Spotlight open={spotlightOpen} items={spotlightItems} onClose={() => setSpotlightOpen(false)} />
+
+      <VoiceAgent open={agentOpen} onClose={() => setAgentOpen(false)} context={getAgentContext} />
+      <VoiceHud context={getAgentContext} enabled={!agentOpen} />
     </div>
   );
 }

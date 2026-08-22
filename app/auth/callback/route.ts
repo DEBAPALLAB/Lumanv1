@@ -159,14 +159,17 @@ export async function GET(request: NextRequest) {
       }
 
       // Fallback: User tried to join specific org but isn't a member.
-      // STRICT MODE: Do NOT auto-assign. Redirect to register/join page.
+      // STRICT MODE: Do NOT auto-assign. Sign out session to prevent unauthenticated ghost sessions.
+      await supabase.auth.signOut();
       if (isDesktopClientFlow) {
         return NextResponse.redirect(`${requestUrl.origin}/desktop?error=needs_invite`);
       }
       return NextResponse.redirect(`${requestUrl.origin}/register?error=needs_invite&org=${orgSlug}`);
-    } catch (err) {
+    } catch (err: any) {
+      console.error("Auth callback exception:", err);
+      const detailMsg = err?.message || (typeof err === "object" ? JSON.stringify(err) : String(err));
       return NextResponse.redirect(
-        `${requestUrl.origin}${failureBase}?error=callback_exception&details=${encodeURIComponent(String(err))}`,
+        `${requestUrl.origin}${failureBase}?error=callback_exception&details=${encodeURIComponent(detailMsg)}`,
       );
     }
   } else {

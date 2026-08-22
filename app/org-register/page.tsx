@@ -1,23 +1,58 @@
 "use client";
 
-import { Building2, Plus } from "lucide-react";
+import { ArrowRight, GripVertical, Plus, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import {
+  ErrorPill,
+  FieldHint,
+  FieldLabel,
+  PillButton,
+  PillInput,
+  StepRail,
+} from "@/components/auth/auth-controls";
+import { AuthShell } from "@/components/auth/auth-shell";
+
+type CustomRole = { id: string; role_name: string; hierarchy_level: number };
+
+const newRoleId = () => Math.random().toString(36).slice(2, 9);
+
+const DEFAULT_ROLES: CustomRole[] = ["Founder", "Director", "Manager", "Employee", "Intern"].map(
+  (role_name, i) => ({ id: newRoleId(), role_name, hierarchy_level: i + 1 })
+);
+
+/** Re-stamp hierarchy_level so it always matches list order, top = 1. */
+function renumber(roles: CustomRole[]): CustomRole[] {
+  return roles.map((role, i) => ({ ...role, hierarchy_level: i + 1 }));
+}
 
 export default function OrgRegisterPage() {
   const router = useRouter();
   const [orgName, setOrgName] = useState("");
   const [hierarchyType, setHierarchyType] = useState<"fixed" | "custom">("fixed");
-  const [customRoles, setCustomRoles] = useState<{ role_name: string; hierarchy_level: number }[]>([
-    { role_name: "Founder", hierarchy_level: 1 },
-    { role_name: "Director", hierarchy_level: 2 },
-    { role_name: "Manager", hierarchy_level: 3 },
-    { role_name: "Employee", hierarchy_level: 4 },
-    { role_name: "Intern", hierarchy_level: 5 },
-  ]);
+  const [customRoles, setCustomRoles] = useState<CustomRole[]>(DEFAULT_ROLES);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  function moveRole(from: number, to: number) {
+    if (to < 0 || to >= customRoles.length) return;
+    const next = [...customRoles];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    setCustomRoles(renumber(next));
+  }
+
+  function removeRole(index: number) {
+    if (customRoles.length <= 1) return;
+    setCustomRoles(renumber(customRoles.filter((_, i) => i !== index)));
+  }
+
+  function renameRole(index: number, value: string) {
+    const next = [...customRoles];
+    next[index] = { ...next[index], role_name: value };
+    setCustomRoles(next);
+  }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -31,7 +66,10 @@ export default function OrgRegisterPage() {
         body: JSON.stringify({
           name: orgName,
           hierarchyType,
-          customRoles: hierarchyType === "custom" ? customRoles : undefined
+          customRoles:
+            hierarchyType === "custom"
+              ? customRoles.map(({ role_name, hierarchy_level }) => ({ role_name, hierarchy_level }))
+              : undefined,
         }),
       });
 
@@ -51,203 +89,182 @@ export default function OrgRegisterPage() {
         }
       } else {
         setError(data.error || "Failed to create organization");
+        setLoading(false);
       }
     } catch (err) {
       setError("An error occurred. Please try again.");
-    } finally {
-      loading && setLoading(false);
+      setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-8 py-16">
-      <div className="w-full max-w-2xl space-y-12">
-        {/* Header */}
-        <div className="space-y-6">
-          <div className="flex items-center gap-6">
-            <div className="p-6 border-brutal-thick bg-accent">
-              <Building2 className="h-16 w-16 text-accent-foreground" />
-            </div>
-            <div>
-              <h1 className="font-black uppercase leading-none">
-                CREATE YOUR
-                <br />
-                ORGANIZATION
-              </h1>
+    <AuthShell
+      eyebrow="New Workspace Setup"
+      title="Name Your Workspace"
+      subtitle="Step 1: Create your organization"
+      backHref="/"
+      backLabel="Back Home"
+      wide={hierarchyType === "custom"}
+      footer={
+        <div className="space-y-3.5 text-center">
+          <p className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">
+            Already have a team workspace?
+          </p>
+          <Link
+            href="/org-login"
+            className="inline-flex w-full py-5 rounded-full border-[3px] border-black bg-black hover:bg-zinc-900 text-white text-center shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] dark:shadow-[5px_5px_0px_0px_rgba(255,255,255,1)] hover:shadow-none hover:translate-x-[5px] hover:translate-y-[5px] transition-all justify-center items-center font-black uppercase text-xs tracking-wider"
+          >
+            Sign In To Workspace
+          </Link>
+        </div>
+      }
+    >
+      <div className="space-y-6">
+        <StepRail step={1} labels={["Create organization", "Create founder account"]} />
+
+        <form onSubmit={handleCreate} className="space-y-6">
+          {/* Organization name */}
+          <div className="space-y-2">
+            <FieldLabel htmlFor="orgName">Organization Name</FieldLabel>
+            <PillInput
+              id="orgName"
+              tone="pink"
+              type="text"
+              value={orgName}
+              onChange={(e) => setOrgName(e.target.value)}
+              placeholder="ENTER ORGANIZATION NAME"
+              required
+              minLength={3}
+              autoFocus
+            />
+            <FieldHint>This becomes your workspace display name and sign-in slug.</FieldHint>
+          </div>
+
+          {/* Hierarchy type */}
+          <div className="space-y-2.5">
+            <FieldLabel>Role Structure</FieldLabel>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setHierarchyType("fixed")}
+                aria-pressed={hierarchyType === "fixed"}
+                className={`p-4 rounded-2xl border-[3px] border-black text-left transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent ${
+                  hierarchyType === "fixed"
+                    ? "bg-[#FBBF24] text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                    : "bg-transparent text-foreground hover:bg-black/[0.03] dark:hover:bg-white/[0.04]"
+                }`}
+              >
+                <p className="text-[11px] font-black uppercase tracking-tight leading-tight">Standard</p>
+                <p className="text-[9px] font-black uppercase opacity-70 mt-1.5 leading-snug">
+                  Founder, admin, intern
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setHierarchyType("custom")}
+                aria-pressed={hierarchyType === "custom"}
+                className={`p-4 rounded-2xl border-[3px] border-black text-left transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent ${
+                  hierarchyType === "custom"
+                    ? "bg-[#FBBF24] text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                    : "bg-transparent text-foreground hover:bg-black/[0.03] dark:hover:bg-white/[0.04]"
+                }`}
+              >
+                <p className="text-[11px] font-black uppercase tracking-tight leading-tight">Custom</p>
+                <p className="text-[9px] font-black uppercase opacity-70 mt-1.5 leading-snug">
+                  Define your own ladder
+                </p>
+              </button>
             </div>
           </div>
-          <p className="text-xl font-bold uppercase border-l-4 border-foreground pl-6">START YOUR JOURNEY WITH LUMAN</p>
-        </div>
 
-        {/* Card */}
-        <div className="border-brutal-thick shadow-brutal-lg bg-card p-12 space-y-8">
-          <form onSubmit={handleCreate} className="space-y-8">
-            <div className="space-y-3">
-              <label htmlFor="orgName" className="block text-sm font-black uppercase tracking-wider">
-                ORGANIZATION NAME
-              </label>
-              <input
-                id="orgName"
-                type="text"
-                value={orgName}
-                onChange={(e) => setOrgName(e.target.value)}
-                placeholder="ENTER YOUR ORGANIZATION NAME"
-                required
-                minLength={3}
-                className="w-full border-brutal px-6 py-4 text-lg font-bold uppercase bg-background placeholder:text-muted-foreground placeholder:font-bold focus:outline-none focus:shadow-brutal"
-              />
-              <p className="text-sm font-bold uppercase opacity-70">THIS WILL BE YOUR ORGANIZATION'S DISPLAY NAME</p>
-            </div>
-
-            {/* Hierarchy Type Selection */}
-            <div className="space-y-4">
-              <label className="block text-sm font-black uppercase tracking-wider">
-                HIERARCHY TYPE
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Custom role builder */}
+          {hierarchyType === "custom" && (
+            <div className="border-[3px] border-black rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] p-4 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[9px] font-black uppercase tracking-wider text-muted-foreground leading-tight">
+                  Highest rank first
+                </p>
                 <button
                   type="button"
-                  onClick={() => setHierarchyType("fixed")}
-                  className={`p-6 border-brutal text-left transition-all ${
-                    hierarchyType === "fixed"
-                      ? "bg-accent text-accent-foreground shadow-brutal-sm"
-                      : "bg-background text-foreground hover:bg-stone-50"
-                  }`}
+                  onClick={() =>
+                    setCustomRoles(
+                      renumber([...customRoles, { id: newRoleId(), role_name: "", hierarchy_level: customRoles.length + 1 }])
+                    )
+                  }
+                  className="px-3 py-1.5 rounded-full border-2 border-black bg-[#D1FAE5] text-black text-[9px] font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center gap-1 shrink-0"
                 >
-                  <p className="font-black text-lg uppercase">Option 1: Fixed Hierarchy</p>
-                  <p className="text-xs font-bold uppercase opacity-80 mt-2">Founder, Admin, Intern roles (Default)</p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setHierarchyType("custom")}
-                  className={`p-6 border-brutal text-left transition-all ${
-                    hierarchyType === "custom"
-                      ? "bg-accent text-accent-foreground shadow-brutal-sm"
-                      : "bg-background text-foreground hover:bg-stone-50"
-                  }`}
-                >
-                  <p className="font-black text-lg uppercase">Option 2: Custom Hierarchy</p>
-                  <p className="text-xs font-bold uppercase opacity-80 mt-2">Define your own roles and levels</p>
+                  <Plus className="h-3 w-3 stroke-[3]" />
+                  Add
                 </button>
               </div>
-            </div>
 
-            {hierarchyType === "custom" && (
-              <div className="border-brutal bg-muted p-6 space-y-6">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-black uppercase tracking-wider text-sm">DEFINE ROLES (ORDER: HIGHEST TO LOWEST)</h3>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newLevel = customRoles.length + 1;
-                      setCustomRoles([...customRoles, { role_name: `ROLE ${newLevel}`, hierarchy_level: newLevel }]);
-                    }}
-                    className="px-4 py-2 border-brutal shadow-brutal-sm hover-brutal bg-background text-xs font-black uppercase"
+              <ul className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                {customRoles.map((role, idx) => (
+                  <li
+                    key={role.id}
+                    className="flex items-center gap-2 bg-[#FDFBF7] dark:bg-zinc-800 border-2 border-black rounded-xl px-2.5 py-2"
                   >
-                    + ADD ROLE
-                  </button>
-                </div>
+                    <span className="flex items-center gap-1 shrink-0">
+                      <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50" />
+                      <span className="w-5 h-5 flex items-center justify-center rounded-md bg-black text-white text-[9px] font-black">
+                        {role.hierarchy_level}
+                      </span>
+                    </span>
 
-                <div className="space-y-3">
-                  {customRoles.map((role, idx) => (
-                    <div key={idx} className="flex items-center gap-3 bg-background border-brutal p-3 shadow-brutal-sm">
-                      <span className="font-black text-xs px-2 py-1 bg-black text-white">{role.hierarchy_level}</span>
-                      <input
-                        type="text"
-                        value={role.role_name}
-                        onChange={(e) => {
-                          const updated = [...customRoles];
-                          updated[idx].role_name = e.target.value;
-                          setCustomRoles(updated);
-                        }}
-                        className="flex-1 bg-transparent border-none font-bold uppercase focus:outline-none"
-                        placeholder="ROLE NAME"
-                        required
-                      />
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          disabled={idx === 0}
-                          onClick={() => {
-                            if (idx === 0) return;
-                            const updated = [...customRoles];
-                            // swap
-                            const temp = updated[idx].role_name;
-                            updated[idx].role_name = updated[idx - 1].role_name;
-                            updated[idx - 1].role_name = temp;
-                            setCustomRoles(updated);
-                          }}
-                          className="p-1 border-brutal bg-stone-50 disabled:opacity-30"
-                        >
-                          &uarr;
-                        </button>
-                        <button
-                          type="button"
-                          disabled={idx === customRoles.length - 1}
-                          onClick={() => {
-                            if (idx === customRoles.length - 1) return;
-                            const updated = [...customRoles];
-                            // swap
-                            const temp = updated[idx].role_name;
-                            updated[idx].role_name = updated[idx + 1].role_name;
-                            updated[idx + 1].role_name = temp;
-                            setCustomRoles(updated);
-                          }}
-                          className="p-1 border-brutal bg-stone-50 disabled:opacity-30"
-                        >
-                          &darr;
-                        </button>
-                        <button
-                          type="button"
-                          disabled={customRoles.length <= 1}
-                          onClick={() => {
-                            if (customRoles.length <= 1) return;
-                            const filtered = customRoles
-                              .filter((_, i) => i !== idx)
-                              .map((r, i) => ({ ...r, hierarchy_level: i + 1 }));
-                            setCustomRoles(filtered);
-                          }}
-                          className="p-1 border-brutal bg-destructive text-destructive-foreground disabled:opacity-30 text-xs font-black"
-                        >
-                          X
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                    <input
+                      type="text"
+                      value={role.role_name}
+                      onChange={(e) => renameRole(idx, e.target.value)}
+                      className="flex-1 min-w-0 bg-transparent border-none text-[10px] font-black uppercase tracking-wide text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+                      placeholder="ROLE NAME"
+                      aria-label={`Role ${role.hierarchy_level} name`}
+                      required
+                    />
 
-            {error && (
-              <div className="px-6 py-4 text-sm font-black uppercase border-brutal bg-destructive text-destructive-foreground">
-                {error.toUpperCase()}
-              </div>
-            )}
+                    <span className="flex items-center gap-0.5 shrink-0">
+                      <button
+                        type="button"
+                        disabled={idx === 0}
+                        onClick={() => moveRole(idx, idx - 1)}
+                        aria-label={`Move ${role.role_name || "role"} up`}
+                        className="w-6 h-6 rounded-md border-2 border-black bg-white dark:bg-zinc-700 text-black dark:text-white text-[9px] font-black disabled:opacity-25 disabled:cursor-not-allowed hover:bg-[#FBBF24] transition-colors"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        disabled={idx === customRoles.length - 1}
+                        onClick={() => moveRole(idx, idx + 1)}
+                        aria-label={`Move ${role.role_name || "role"} down`}
+                        className="w-6 h-6 rounded-md border-2 border-black bg-white dark:bg-zinc-700 text-black dark:text-white text-[9px] font-black disabled:opacity-25 disabled:cursor-not-allowed hover:bg-[#FBBF24] transition-colors"
+                      >
+                        ↓
+                      </button>
+                      <button
+                        type="button"
+                        disabled={customRoles.length <= 1}
+                        onClick={() => removeRole(idx)}
+                        aria-label={`Remove ${role.role_name || "role"}`}
+                        className="w-6 h-6 rounded-md border-2 border-black bg-rose-500 text-white flex items-center justify-center disabled:opacity-25 disabled:cursor-not-allowed hover:bg-rose-600 transition-colors"
+                      >
+                        <X className="h-3 w-3 stroke-[3]" />
+                      </button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full px-8 py-6 text-xl font-black uppercase border-brutal shadow-brutal hover-brutal bg-accent text-accent-foreground disabled:opacity-50 flex items-center justify-center gap-3"
-            >
-              <Plus className="h-6 w-6" />
-              {loading ? "CREATING..." : "CREATE ORGANIZATION"}
-            </button>
-          </form>
-        </div>
+          {error && <ErrorPill>{error.toUpperCase()}</ErrorPill>}
 
-        {/* Footer */}
-        <div className="text-center text-lg font-bold uppercase">
-          <p>
-            ALREADY HAVE AN ORGANIZATION?{" "}
-            <Link
-              href="/org-login"
-              className="underline decoration-4 underline-offset-8 hover:bg-accent hover:text-accent-foreground px-2"
-            >
-              SIGN IN
-            </Link>
-          </p>
-        </div>
+          <PillButton type="submit" tone="gold" disabled={loading}>
+            {loading ? "Creating..." : "Create Organization"}
+            <ArrowRight className="h-4 w-4 stroke-[3]" />
+          </PillButton>
+        </form>
       </div>
-    </div>
+    </AuthShell>
   );
 }

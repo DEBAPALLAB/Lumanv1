@@ -1,6 +1,16 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Organization, OrganizationMember } from "@/types/organization";
+import { createClient } from "@supabase/supabase-js";
+
+function getAdminClient() {
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+  }
+  return null;
+}
 
 /**
  * Generate a URL-friendly slug from organization name
@@ -51,7 +61,8 @@ export function verifyFounderClaim(claim: string, organizationId: string): boole
  * Get all organizations
  */
 export async function getOrganizations() {
-  const supabase = await createSupabaseServerClient();
+  const admin = getAdminClient();
+  const supabase = admin ?? (await createSupabaseServerClient());
   const { data, error } = await supabase.from("organizations").select("*").order("created_at", { ascending: true });
 
   if (error) throw error;
@@ -62,13 +73,15 @@ export async function getOrganizations() {
  * Get organization by slug
  */
 export async function getOrganizationBySlug(slug: string) {
-  const supabase = await createSupabaseServerClient();
+  const admin = getAdminClient();
+  const supabase = admin ?? (await createSupabaseServerClient());
   const { data, error } = await supabase.from("organizations").select("*").eq("slug", slug).single();
 
   if (error) {
     if (error.code === "PGRST116") {
       return null; // Not found
     }
+    console.error("getOrganizationBySlug error:", error);
     throw error;
   }
 
@@ -79,7 +92,8 @@ export async function getOrganizationBySlug(slug: string) {
  * Get organization by ID
  */
 export async function getOrganizationById(id: string) {
-  const supabase = await createSupabaseServerClient();
+  const admin = getAdminClient();
+  const supabase = admin ?? (await createSupabaseServerClient());
   const { data, error } = await supabase.from("organizations").select("*").eq("id", id).single();
 
   if (error) throw error;
@@ -95,7 +109,8 @@ export async function createOrganization(
   hierarchyType: "fixed" | "custom" = "fixed",
   customRoles?: { role_name: string; hierarchy_level: number }[],
 ) {
-  const supabase = await createSupabaseServerClient();
+  const admin = getAdminClient();
+  const supabase = admin ?? (await createSupabaseServerClient());
 
   let slug = generateSlug(name);
 
@@ -156,7 +171,8 @@ export async function createOrganization(
  * Update organization
  */
 export async function updateOrganization(id: string, updates: { name?: string }) {
-  const supabase = await createSupabaseServerClient();
+  const admin = getAdminClient();
+  const supabase = admin ?? (await createSupabaseServerClient());
 
   const updateData: Record<string, unknown> = { ...updates, updated_at: new Date().toISOString() };
 
@@ -180,7 +196,8 @@ export async function addMemberToOrganization(
   role = "intern",
   assignedRoleId?: string,
 ) {
-  const supabase = await createSupabaseServerClient();
+  const admin = getAdminClient();
+  const supabase = admin ?? (await createSupabaseServerClient());
 
   const insertData: Record<string, unknown> = {
     organization_id: organizationId,
@@ -193,7 +210,10 @@ export async function addMemberToOrganization(
 
   const { data, error } = await supabase.from("organization_members").insert(insertData).select().single();
 
-  if (error) throw error;
+  if (error) {
+    console.error("addMemberToOrganization error:", error);
+    throw error;
+  }
   return data as OrganizationMember;
 }
 
@@ -201,7 +221,8 @@ export async function addMemberToOrganization(
  * Get all members of an organization
  */
 export async function getOrganizationMembers(organizationId: string) {
-  const supabase = await createSupabaseServerClient();
+  const admin = getAdminClient();
+  const supabase = admin ?? (await createSupabaseServerClient());
   const { data, error } = await supabase
     .from("organization_members")
     .select("*")
@@ -216,7 +237,8 @@ export async function getOrganizationMembers(organizationId: string) {
  * Get user's membership in an organization
  */
 export async function getUserMembership(organizationId: string, userId: string) {
-  const supabase = await createSupabaseServerClient();
+  const admin = getAdminClient();
+  const supabase = admin ?? (await createSupabaseServerClient());
   const { data, error } = await supabase
     .from("organization_members")
     .select("*")
@@ -238,7 +260,8 @@ export async function getUserMembership(organizationId: string, userId: string) 
  * Get all organizations a user belongs to
  */
 export async function getUserOrganizations(userId: string) {
-  const supabase = await createSupabaseServerClient();
+  const admin = getAdminClient();
+  const supabase = admin ?? (await createSupabaseServerClient());
   const { data, error } = await supabase
     .from("organization_members")
     .select("organization_id, role, organizations(*)")
@@ -255,7 +278,8 @@ export async function getUserOrganizations(userId: string) {
  * Update member role
  */
 export async function updateMemberRole(organizationId: string, userId: string, role?: string, assignedRoleId?: string) {
-  const supabase = await createSupabaseServerClient();
+  const admin = getAdminClient();
+  const supabase = admin ?? (await createSupabaseServerClient());
 
   const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (role !== undefined) updateData.role = role;
@@ -277,7 +301,8 @@ export async function updateMemberRole(organizationId: string, userId: string, r
  * Remove member from organization
  */
 export async function removeMemberFromOrganization(organizationId: string, userId: string) {
-  const supabase = await createSupabaseServerClient();
+  const admin = getAdminClient();
+  const supabase = admin ?? (await createSupabaseServerClient());
   const { error } = await supabase
     .from("organization_members")
     .delete()
@@ -291,7 +316,8 @@ export async function removeMemberFromOrganization(organizationId: string, userI
  * Verify invitation code
  */
 export async function verifyOrganizationCode(slug: string, code: string) {
-  const supabase = await createSupabaseServerClient();
+  const admin = getAdminClient();
+  const supabase = admin ?? (await createSupabaseServerClient());
   const { data, error } = await supabase
     .from("organizations")
     .select("id, name, slug, hierarchy_type")

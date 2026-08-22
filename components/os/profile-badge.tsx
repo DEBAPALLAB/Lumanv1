@@ -1,6 +1,7 @@
 "use client";
 
 import type { Identity } from "@/lib/os/use-org-data";
+import { useDesktopActions } from "@/lib/os/window-store";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { LogOut, Moon, Settings, ShieldCheck, Sun } from "lucide-react";
@@ -35,6 +36,7 @@ export function ProfileBadge({ identity }: { identity: Identity }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const { theme, setTheme } = useTheme();
+  const actions = useDesktopActions();
 
   // next-themes can't know the persisted theme until after mount (it reads
   // localStorage client-side only) — theme is undefined on the server and on
@@ -172,17 +174,21 @@ export function ProfileBadge({ identity }: { identity: Identity }) {
               </span>
             </button>
 
-            <a
-              href="/settings"
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                actions.open({ kind: "settings", title: "Settings", dedupeKey: "settings" });
+              }}
               className={cn(
-                "flex items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-[12px] font-semibold text-black",
+                "flex w-full items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-left text-[12px] font-semibold text-black",
                 "transition-colors duration-150 hover:bg-black/[0.06]",
                 "dark:text-[#EDE7DD] dark:hover:bg-[#EDE7DD]/[0.08]",
               )}
             >
               <Settings className="h-4 w-4 text-black/50 dark:text-[#EDE7DD]/50" strokeWidth={2.25} />
               Settings
-            </a>
+            </button>
             <button
               type="button"
               onClick={() => void signOut()}

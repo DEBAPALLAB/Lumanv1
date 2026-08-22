@@ -60,7 +60,11 @@ export async function getEventById(id: string) {
 
 export async function createEvent(event: Omit<Event, "id" | "created_at" | "updated_at">) {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.from("events").insert([event]).select().single();
+  const { data, error } = await supabase
+    .from("events")
+    .insert([event])
+    .select("*, workspaces(owner_name)")
+    .single();
 
   if (error) throw error;
   return data as Event;
@@ -72,7 +76,7 @@ export async function updateEvent(id: string, updates: Partial<Event>) {
     .from("events")
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq("id", id)
-    .select()
+    .select("*, workspaces(owner_name)")
     .single();
 
   if (error) throw error;

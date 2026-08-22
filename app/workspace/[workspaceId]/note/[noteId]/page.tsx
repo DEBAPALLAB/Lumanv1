@@ -3,7 +3,7 @@
 import AIChatSidebar from "@/components/editor/ai-chat-sidebar";
 import { EventModal } from "@/components/calendar/event-modal";
 import { TagSelector } from "@/components/editor/tag-selector";
-import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, MessageSquare, Sparkles } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, MessageSquare, Sparkles, Trash2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -369,11 +369,36 @@ export default function NoteEditorPage() {
                   className="w-full bg-transparent text-2xl sm:text-3xl xl:text-4xl font-black uppercase text-black dark:text-stone-100 focus:outline-none placeholder:text-stone-300 dark:placeholder:text-stone-700"
                   placeholder="UNTITLED NOTE"
                 />
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="px-3.5 py-1.5 text-xs font-black uppercase border-2 border-black dark:border-stone-100 bg-[#FBBF24] text-black shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] dark:shadow-[1.5px_1.5px_0px_0px_rgba(255,255,255,1)] rounded-full select-none">
-                    Note Document
-                  </span>
-                  <TagSelector tags={tags} onChange={handleTagsChange} />
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="px-3.5 py-1.5 text-xs font-black uppercase border-2 border-black dark:border-stone-100 bg-[#FBBF24] text-black shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] dark:shadow-[1.5px_1.5px_0px_0px_rgba(255,255,255,1)] rounded-full select-none">
+                      Note Document
+                    </span>
+                    <TagSelector tags={tags} onChange={handleTagsChange} />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!confirm(`Delete note "${title || "Untitled"}"? This action cannot be undone.`)) return;
+                      try {
+                        const res = await fetch(`/api/notes/${noteId}`, { method: "DELETE" });
+                        if (res.ok) {
+                          const orgParam = new URLSearchParams(window.location.search).get("org");
+                          router.push(`/workspace/${workspaceId}${orgParam ? `?org=${orgParam}` : ""}`);
+                        } else {
+                          alert("Failed to delete note");
+                        }
+                      } catch (err) {
+                        alert("Error deleting note");
+                      }
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-black uppercase border-2 border-black dark:border-stone-100 bg-white dark:bg-zinc-800 text-stone-600 dark:text-stone-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] dark:shadow-[1.5px_1.5px_0px_0px_rgba(255,255,255,1)] hover:shadow-none transition-all rounded-full select-none"
+                    title="Delete this note"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>Delete Note</span>
+                  </button>
                 </div>
               </div>
 

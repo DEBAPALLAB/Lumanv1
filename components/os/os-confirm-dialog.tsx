@@ -26,6 +26,7 @@ export function OsConfirmDialog({
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onCancel()}>
       <DialogContent
+        overlayClassName="bg-black/25 backdrop-blur-[1.5px]"
         className={cn(
           "max-w-sm gap-0 rounded-[13px] border-[2.5px] border-black p-0",
           "bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]",

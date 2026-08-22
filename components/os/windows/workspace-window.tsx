@@ -21,15 +21,19 @@ const TITLE_MAX = 200;
 export function WorkspaceWindow({
   workspaceId,
   workspace,
+  windowId,
   loadNotes,
   createNote,
   deleteNote,
+  deleteWorkspace,
 }: {
   workspaceId: string;
   workspace?: Workspace;
+  windowId?: string;
   loadNotes: (workspaceId: string) => Promise<Note[]>;
   createNote: (workspaceId: string, title: string) => Promise<Note>;
   deleteNote: (workspaceId: string, noteId: string) => Promise<void>;
+  deleteWorkspace?: (workspaceId: string) => Promise<void>;
 }) {
   const actions = useDesktopActions();
   const [notes, setNotes] = useState<Note[] | null>(null);
@@ -38,6 +42,8 @@ export function WorkspaceWindow({
   const [creatingBusy, setCreatingBusy] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Note | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [pendingDeleteWorkspace, setPendingDeleteWorkspace] = useState(false);
+  const [deletingWorkspace, setDeletingWorkspace] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -87,6 +93,18 @@ export function WorkspaceWindow({
     }
   }
 
+  async function handleConfirmDeleteWorkspace() {
+    if (!deleteWorkspace) return;
+    setDeletingWorkspace(true);
+    try {
+      await deleteWorkspace(workspaceId);
+      if (windowId) actions.close(windowId);
+      setPendingDeleteWorkspace(false);
+    } finally {
+      setDeletingWorkspace(false);
+    }
+  }
+
   if (!notes) return <GridSkeleton />;
 
   return (
@@ -116,6 +134,7 @@ export function WorkspaceWindow({
           type="button"
           onClick={() => setCreating(true)}
           aria-label="New note"
+          title="New note"
           className={cn(
             "flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-[7px] border-[2px] border-black",
             "bg-[#FBBF24] text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
@@ -125,6 +144,23 @@ export function WorkspaceWindow({
         >
           <Plus className="h-3.5 w-3.5" strokeWidth={3} />
         </button>
+
+        {deleteWorkspace && (
+          <button
+            type="button"
+            onClick={() => setPendingDeleteWorkspace(true)}
+            aria-label="Delete workspace"
+            title="Delete workspace"
+            className={cn(
+              "flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-[7px] border-[2px] border-black",
+              "bg-white text-black/50 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
+              "transition-all duration-150 hover:translate-x-[1px] hover:translate-y-[1px] hover:bg-red-50 hover:text-red-600 hover:shadow-none",
+              "dark:border-[#EDE7DD] dark:bg-[#211e1a] dark:text-[#EDE7DD]/50 dark:hover:bg-red-950/30 dark:hover:text-red-400 dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.9)]",
+            )}
+          >
+            <Trash2 className="h-3.5 w-3.5" strokeWidth={2.5} />
+          </button>
+        )}
       </div>
 
       {creating && (
@@ -213,6 +249,15 @@ export function WorkspaceWindow({
         confirmLabel={deleting ? "Deleting…" : "Delete"}
         onConfirm={handleConfirmDelete}
         onCancel={() => setPendingDelete(null)}
+      />
+
+      <OsConfirmDialog
+        open={pendingDeleteWorkspace}
+        title={workspace ? `Delete "${workspace.owner_name}"?` : "Delete workspace?"}
+        body="This will permanently delete this workspace and all notes inside it. This action cannot be undone."
+        confirmLabel={deletingWorkspace ? "Deleting…" : "Delete workspace"}
+        onConfirm={handleConfirmDeleteWorkspace}
+        onCancel={() => setPendingDeleteWorkspace(false)}
       />
     </div>
   );

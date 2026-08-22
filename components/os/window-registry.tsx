@@ -1,7 +1,7 @@
 "use client";
 
 import type { AuthorDirectory } from "@/components/messaging/message-list";
-import type { Note, Workspace } from "@/lib/os/use-org-data";
+import type { Identity, Note, Workspace } from "@/lib/os/use-org-data";
 import { type WindowState, useDesktopActions } from "@/lib/os/window-store";
 import { cn } from "@/lib/utils";
 import { FileText, Loader2 } from "lucide-react";
@@ -11,6 +11,7 @@ import { ChatWindow } from "./windows/chat-window";
 import { FilesWindow } from "./windows/files-window";
 import { type MediaKind, MediaWindow } from "./windows/media-window";
 import { NoteWindow } from "./windows/note-window";
+import { SettingsWindow } from "./windows/settings-window";
 import { TasksWindow } from "./windows/tasks-window";
 import { VoiceWindow } from "./windows/voice-window";
 import { WhiteboardWindow } from "./windows/whiteboard-window";
@@ -31,10 +32,13 @@ export type DesktopContext = {
   directory: AuthorDirectory;
   workspaces: Workspace[];
   loadNotes: (workspaceId: string) => Promise<Note[]>;
+  createWorkspace: (ownerName: string, opts?: { color?: string; folderId?: string }) => Promise<Workspace>;
+  deleteWorkspace: (workspaceId: string) => Promise<void>;
   createNote: (workspaceId: string, title: string) => Promise<Note>;
   deleteNote: (workspaceId: string, noteId: string) => Promise<void>;
   /** The caller's own name, shown on their chip in a voice room. */
   displayName: string;
+  identity: Identity;
 };
 
 /**
@@ -54,6 +58,8 @@ export function renderWindow(win: WindowState, ctx: DesktopContext) {
           noteId={String(payload.noteId)}
           workspaceId={String(payload.workspaceId ?? "")}
           workspaceName={payload.workspaceName ? String(payload.workspaceName) : undefined}
+          windowId={win.id}
+          deleteNote={ctx.deleteNote}
         />
       );
 
@@ -74,9 +80,11 @@ export function renderWindow(win: WindowState, ctx: DesktopContext) {
         <WorkspaceWindow
           workspaceId={id}
           workspace={ctx.workspaces.find((w) => w.id === id)}
+          windowId={win.id}
           loadNotes={ctx.loadNotes}
           createNote={ctx.createNote}
           deleteNote={ctx.deleteNote}
+          deleteWorkspace={ctx.deleteWorkspace}
         />
       );
     }
@@ -95,13 +103,22 @@ export function renderWindow(win: WindowState, ctx: DesktopContext) {
       );
 
     case "tasks":
-      return <TasksWindow />;
+      return (
+        <TasksWindow
+          workspaces={ctx.workspaces}
+          directory={ctx.directory}
+          defaultWorkspaceId={payload.workspaceId ? String(payload.workspaceId) : undefined}
+        />
+      );
 
     case "calendar":
-      return <CalendarWindow />;
+      return <CalendarWindow workspaces={ctx.workspaces} />;
 
     case "files":
       return <FilesWindow orgId={ctx.orgId} />;
+
+    case "settings":
+      return <SettingsWindow identity={ctx.identity} orgId={ctx.orgId} orgSlug={ctx.orgSlug} />;
 
     case "media":
       return (

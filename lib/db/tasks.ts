@@ -68,3 +68,52 @@ export async function upsertTasks(tasks: TaskUpsertInput[], workspaceId: string)
   if (error) throw error;
   return data as Task[];
 }
+
+/** Creates a single task directly (GodMode's "New task" field), not tied to a note. */
+export async function createTask(input: {
+  content: string;
+  workspaceId: string;
+  dueDate?: string | null;
+  assigneeId?: string | null;
+}) {
+  const supabase = await createSupabaseServerClient();
+
+  const { data, error } = await supabase
+    .from("tasks")
+    .insert({
+      content: input.content,
+      workspace_id: input.workspaceId,
+      due_date: input.dueDate ?? null,
+      assignee_id: input.assigneeId ?? null,
+      is_completed: false,
+    })
+    .select("*, workspaces(owner_name)")
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+/** Patches one task's completion, due date, or assignee. */
+export async function updateTask(
+  id: string,
+  updates: { is_completed?: boolean; due_date?: string | null; assignee_id?: string | null; content?: string },
+) {
+  const supabase = await createSupabaseServerClient();
+
+  const { data, error } = await supabase
+    .from("tasks")
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .select("*, workspaces(owner_name)")
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteTask(id: string) {
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.from("tasks").delete().eq("id", id);
+  if (error) throw error;
+}

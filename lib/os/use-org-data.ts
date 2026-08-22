@@ -255,6 +255,23 @@ export function useOrgData() {
     }));
   }, []);
 
+  /** Deletes a workspace and purges its cached notes and references. */
+  const deleteWorkspace = useCallback(async (workspaceId: string) => {
+    const res = await fetch(`/api/workspaces?id=${workspaceId}`, { method: "DELETE" });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      throw new Error(body?.error ?? "Failed to delete workspace");
+    }
+
+    setWorkspaces((prev) => prev.filter((w) => w.id !== workspaceId));
+    setNotesByWorkspace((prev) => {
+      const next = { ...prev };
+      delete next[workspaceId];
+      return next;
+    });
+  }, []);
+
   /**
    * Notes for one workspace, fetched on demand and cached.
    *
@@ -351,6 +368,7 @@ export function useOrgData() {
     notesByWorkspace,
     loadNotes,
     createWorkspace,
+    deleteWorkspace,
     createNote,
     deleteNote,
     refreshBoards,

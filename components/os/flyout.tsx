@@ -1,5 +1,6 @@
 "use client";
 
+import { OsConfirmDialog } from "@/components/os/os-confirm-dialog";
 import type { Board, Channel, Folder, Note, VoiceRoom, Workspace } from "@/lib/os/use-org-data";
 import { useDesktop, useDesktopActions } from "@/lib/os/window-store";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,7 @@ import {
   Plus,
   Radio,
   Search,
+  Trash2,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -41,7 +43,9 @@ export function Flyout({
   rooms,
   loadNotes,
   createWorkspace,
+  deleteWorkspace,
   createNote,
+  deleteNote,
   onOpenBoard,
   onStartCall,
   loading,
@@ -53,7 +57,9 @@ export function Flyout({
   rooms: VoiceRoom[];
   loadNotes: (workspaceId: string) => Promise<Note[]>;
   createWorkspace: (ownerName: string) => Promise<Workspace>;
+  deleteWorkspace?: (workspaceId: string) => Promise<void>;
   createNote: (workspaceId: string, title: string) => Promise<Note>;
+  deleteNote?: (workspaceId: string, noteId: string) => Promise<void>;
   onOpenBoard: (scope: "organization" | "workspace", workspaceId?: string) => void;
   onStartCall: (scope: "organization" | "workspace", workspaceId?: string) => void;
   loading: boolean;
@@ -70,6 +76,10 @@ export function Flyout({
   const [creatingWorkspaceBusy, setCreatingWorkspaceBusy] = useState(false);
   const [creatingNote, setCreatingNote] = useState(false);
   const [creatingNoteBusy, setCreatingNoteBusy] = useState(false);
+  const [pendingDeleteWorkspace, setPendingDeleteWorkspace] = useState<Workspace | null>(null);
+  const [pendingDeleteNote, setPendingDeleteNote] = useState<Note | null>(null);
+  const [deletingWorkspace, setDeletingWorkspace] = useState(false);
+  const [deletingNote, setDeletingNote] = useState(false);
 
   const kind = desktop.flyout;
 
@@ -112,6 +122,36 @@ export function Flyout({
       // Left open so the user can retry with the same typed title.
     } finally {
       setCreatingNoteBusy(false);
+    }
+  }
+
+  async function handleConfirmDeleteWorkspace() {
+    if (!pendingDeleteWorkspace || !deleteWorkspace) return;
+    setDeletingWorkspace(true);
+    try {
+      await deleteWorkspace(pendingDeleteWorkspace.id);
+      if (drilled?.id === pendingDeleteWorkspace.id) {
+        setDrilled(null);
+      }
+      setPendingDeleteWorkspace(null);
+    } catch (err) {
+      console.error("Failed to delete workspace:", err);
+    } finally {
+      setDeletingWorkspace(false);
+    }
+  }
+
+  async function handleConfirmDeleteNote() {
+    if (!pendingDeleteNote || !drilled || !deleteNote) return;
+    setDeletingNote(true);
+    try {
+      await deleteNote(drilled.id, pendingDeleteNote.id);
+      setNotes((prev) => (prev ?? []).filter((n) => n.id !== pendingDeleteNote.id));
+      setPendingDeleteNote(null);
+    } catch (err) {
+      console.error("Failed to delete note:", err);
+    } finally {
+      setDeletingNote(false);
     }
   }
 
@@ -295,6 +335,7 @@ export function Flyout({
                   dedupeKey: `workspace:${drilled.id}`,
                 })
               }
+              onDeleteNote={deleteNote ? (note) => setPendingDeleteNote(note) : undefined}
             />
           ) : kind === "workspaces" ? (
             <WorkspacesLevel
@@ -306,6 +347,7 @@ export function Flyout({
               onStartCreate={() => setCreatingWorkspace(true)}
               onCommitCreate={handleCreateWorkspace}
               onCancelCreate={() => setCreatingWorkspace(false)}
+              onDelete={deleteWorkspace ? (ws) => setPendingDeleteWorkspace(ws) : undefined}
             />
           ) : kind === "boards" ? (
             <BoardsLevel boards={boards} workspaces={workspaces} onOpenBoard={onOpenBoard} />
@@ -327,6 +369,26 @@ export function Flyout({
           )}
         </div>
       </aside>
+
+      {/* Delete Workspace Confirmation Dialog */}
+      <OsConfirmDialog
+        open={Boolean(pendingDeleteWorkspace)}
+        title={pendingDeleteWorkspace ? `Delete "${pendingDeleteWorkspace.owner_name}"?` : "Delete workspace?"}
+        body="This will permanently delete this workspace and all notes inside it. This action cannot be undone."
+        confirmLabel={deletingWorkspace ? "Deleting..." : "Delete workspace"}
+        onConfirm={handleConfirmDeleteWorkspace}
+        onCancel={() => setPendingDeleteWorkspace(null)}
+      />
+
+      {/* Delete Note Confirmation Dialog */}
+      <OsConfirmDialog
+        open={Boolean(pendingDeleteNote)}
+        title={pendingDeleteNote ? `Delete "${pendingDeleteNote.title || "Untitled"}"?` : "Delete note?"}
+        body="This will permanently delete this note. This action cannot be undone."
+        confirmLabel={deletingNote ? "Deleting..." : "Delete note"}
+        onConfirm={handleConfirmDeleteNote}
+        onCancel={() => setPendingDeleteNote(null)}
+      />
     </>
   );
 }
@@ -467,6 +529,7 @@ function WorkspacesLevel({
   onStartCreate,
   onCommitCreate,
   onCancelCreate,
+  onDelete,
 }: {
   folders: Folder[];
   workspaces: Workspace[];
@@ -476,6 +539,7 @@ function WorkspacesLevel({
   onStartCreate: () => void;
   onCommitCreate: (name: string) => void;
   onCancelCreate: () => void;
+  onDelete?: (workspace: Workspace) => void;
 }) {
   const unfiled = workspaces.filter((w) => !w.folder_id);
 
@@ -505,7 +569,7 @@ function WorkspacesLevel({
               {folder.name}
             </p>
             {inFolder.map((w) => (
-              <WorkspaceRow key={w.id} workspace={w} onDrill={onDrill} />
+              <WorkspaceRow key={w.id} workspace={w} onDrill={onDrill} onDelete={onDelete} />
             ))}
           </div>
         );
@@ -519,7 +583,7 @@ function WorkspacesLevel({
             </p>
           )}
           {unfiled.map((w) => (
-            <WorkspaceRow key={w.id} workspace={w} onDrill={onDrill} />
+            <WorkspaceRow key={w.id} workspace={w} onDrill={onDrill} onDelete={onDelete} />
           ))}
         </div>
       )}
@@ -527,13 +591,31 @@ function WorkspacesLevel({
   );
 }
 
-function WorkspaceRow({ workspace, onDrill }: { workspace: Workspace; onDrill: (w: Workspace) => void }) {
+function WorkspaceRow({
+  workspace,
+  onDrill,
+  onDelete,
+}: {
+  workspace: Workspace;
+  onDrill: (w: Workspace) => void;
+  onDelete?: (w: Workspace) => void;
+}) {
   const colour = swatchFor(workspace.id, workspace.color);
 
   return (
-    <button type="button" onClick={() => onDrill(workspace)} className={ROW}>
-      {/* A filled rounded square rather than a bordered box: the border made
-          light workspace colours read as an unchecked checkbox. */}
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onDrill(workspace)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onDrill(workspace);
+        }
+      }}
+      className={cn(ROW, "cursor-pointer select-none relative group/ws")}
+    >
+      {/* A filled rounded square rather than a bordered box */}
       <span
         className="h-[22px] w-[22px] shrink-0 rounded-[6px] ring-1 ring-inset ring-black/15 dark:ring-[#EDE7DD]/15"
         style={{ background: colour }}
@@ -542,15 +624,37 @@ function WorkspaceRow({ workspace, onDrill }: { workspace: Workspace; onDrill: (
       <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-black dark:text-[#EDE7DD]">
         {workspace.owner_name}
       </span>
+
+      {onDelete && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(workspace);
+          }}
+          aria-label={`Delete ${workspace.owner_name}`}
+          title="Delete workspace"
+          className={cn(
+            "flex h-6 w-6 items-center justify-center rounded-[5px]",
+            "text-black/30 opacity-0 transition-all duration-150",
+            "hover:bg-red-500/10 hover:text-red-500",
+            "group-hover/ws:opacity-100 focus-visible:opacity-100",
+            "dark:text-[#EDE7DD]/30 dark:hover:bg-red-500/20 dark:hover:text-red-400",
+          )}
+        >
+          <Trash2 className="h-3.5 w-3.5" strokeWidth={2.5} />
+        </button>
+      )}
+
       <ChevronRight
         className={cn(
           "h-3.5 w-3.5 shrink-0 text-black/20 transition-transform duration-150",
-          "group-hover:translate-x-0.5 group-hover:text-black/55",
-          "dark:text-[#EDE7DD]/20 dark:group-hover:text-[#EDE7DD]/55",
+          "group-hover/ws:translate-x-0.5 group-hover/ws:text-black/55",
+          "dark:text-[#EDE7DD]/20 dark:group-hover/ws:text-[#EDE7DD]/55",
         )}
         strokeWidth={2.5}
       />
-    </button>
+    </div>
   );
 }
 
@@ -566,6 +670,7 @@ function NotesLevel({
   onCancelCreate,
   onOpenNote,
   onOpenWorkspace,
+  onDeleteNote,
 }: {
   workspace: Workspace;
   notes: Note[];
@@ -577,11 +682,11 @@ function NotesLevel({
   onCancelCreate: () => void;
   onOpenNote: (note: Note) => void;
   onOpenWorkspace: () => void;
+  onDeleteNote?: (note: Note) => void;
 }) {
   return (
     <div className="space-y-0.5">
-      {/* Opening the workspace itself stays available — drilling in to reach a
-          note should not hide the workspace overview. */}
+      {/* Opening the workspace itself stays available */}
       <button type="button" onClick={onOpenWorkspace} className={cn(ROW, "mb-1")}>
         <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[6px] bg-[#FBBF24] ring-1 ring-inset ring-black/15">
           <Layers className="h-3.5 w-3.5 text-black" strokeWidth={2.5} />
@@ -609,14 +714,47 @@ function NotesLevel({
         <Empty label="No notes here yet" />
       ) : (
         notes.map((note) => (
-          <button key={note.id} type="button" onClick={() => onOpenNote(note)} className={ROW}>
+          <div
+            key={note.id}
+            role="button"
+            tabIndex={0}
+            onClick={() => onOpenNote(note)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onOpenNote(note);
+              }
+            }}
+            className={cn(ROW, "cursor-pointer select-none relative group/note")}
+          >
             <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[6px] bg-black/[0.05] dark:bg-[#EDE7DD]/[0.08]">
               <FileText className="h-3.5 w-3.5 text-black/45 dark:text-[#EDE7DD]/45" strokeWidth={2.5} />
             </span>
             <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium text-black dark:text-[#EDE7DD]">
               {note.title || "Untitled"}
             </span>
-          </button>
+
+            {onDeleteNote && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteNote(note);
+                }}
+                aria-label={`Delete ${note.title || "Untitled"}`}
+                title="Delete note"
+                className={cn(
+                  "flex h-6 w-6 items-center justify-center rounded-[5px]",
+                  "text-black/30 opacity-0 transition-all duration-150",
+                  "hover:bg-red-500/10 hover:text-red-500",
+                  "group-hover/note:opacity-100 focus-visible:opacity-100",
+                  "dark:text-[#EDE7DD]/30 dark:hover:bg-red-500/20 dark:hover:text-red-400",
+                )}
+              >
+                <Trash2 className="h-3.5 w-3.5" strokeWidth={2.5} />
+              </button>
+            )}
+          </div>
         ))
       )}
     </div>

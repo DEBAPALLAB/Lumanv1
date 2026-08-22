@@ -875,19 +875,42 @@ export function WorkspaceSidebar({
                     filteredNotes.map((note) => {
                       const isActive = noteId === note.id;
                       return (
-                        <Link
-                          key={note.id}
-                          href={`/workspace/${workspaceId}/note/${note.id}${orgSlug ? `?org=${orgSlug}` : ""}`}
-                          className={cn(
-                            "flex items-center gap-2.5 px-4 py-3 text-[10px] font-black uppercase rounded-[12px] border-[3px] transition-all hover:-translate-y-0.5",
-                            isActive
-                              ? "bg-[#FBBF24] text-black border-black dark:border-stone-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] font-black"
-                              : "bg-white dark:bg-zinc-900 hover:bg-stone-50 dark:hover:bg-zinc-800 border-black dark:border-stone-100 shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] dark:shadow-[1.5px_1.5px_0px_0px_rgba(255,255,255,1)] text-stone-800 dark:text-stone-100 font-bold"
-                          )}
-                        >
-                          <FileText className="h-3.5 w-3.5 shrink-0" />
-                          <span className="truncate flex-1 font-sans">{note.title}</span>
-                        </Link>
+                        <div key={note.id} className="flex items-center gap-1.5 group/noteitem">
+                          <Link
+                            href={`/workspace/${workspaceId}/note/${note.id}${orgSlug ? `?org=${orgSlug}` : ""}`}
+                            className={cn(
+                              "flex-1 flex items-center gap-2.5 px-4 py-3 text-[10px] font-black uppercase rounded-[12px] border-[3px] transition-all hover:-translate-y-0.5 min-w-0 truncate",
+                              isActive
+                                ? "bg-[#FBBF24] text-black border-black dark:border-stone-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] font-black"
+                                : "bg-white dark:bg-zinc-900 hover:bg-stone-50 dark:hover:bg-zinc-800 border-black dark:border-stone-100 shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] dark:shadow-[1.5px_1.5px_0px_0px_rgba(255,255,255,1)] text-stone-800 dark:text-stone-100 font-bold"
+                            )}
+                          >
+                            <FileText className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate flex-1 font-sans">{note.title}</span>
+                          </Link>
+
+                          <button
+                            type="button"
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (!confirm(`Delete note "${note.title || "Untitled"}"? This action cannot be undone.`)) return;
+                              const res = await fetch(`/api/notes/${note.id}`, { method: "DELETE" });
+                              if (res.ok) {
+                                setNotes((prev) => prev.filter((n) => n.id !== note.id));
+                                if (noteId === note.id) {
+                                  window.location.href = `/workspace/${workspaceId}${orgSlug ? `?org=${orgSlug}` : ""}`;
+                                }
+                              } else {
+                                alert("Failed to delete note");
+                              }
+                            }}
+                            className="p-1 text-stone-400 dark:text-stone-500 hover:text-red-600 dark:hover:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors opacity-0 group-hover/noteitem:opacity-100 focus-visible:opacity-100 shrink-0"
+                            title="Delete note"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       );
                     })
                   )}

@@ -1,8 +1,10 @@
 "use client";
 
+import { OsConfirmDialog } from "@/components/os/os-confirm-dialog";
+import { useDesktopActions } from "@/lib/os/window-store";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 
@@ -29,11 +31,16 @@ export function NoteWindow({
   noteId,
   workspaceId,
   workspaceName,
+  windowId,
+  deleteNote,
 }: {
   noteId: string;
   workspaceId: string;
   workspaceName?: string;
+  windowId?: string;
+  deleteNote?: (workspaceId: string, noteId: string) => Promise<void>;
 }) {
+  const actions = useDesktopActions();
   const [title, setTitle] = useState("");
   // Tiptap's document shape — passed straight through to the editor, which
   // owns its own autosave from that point on.
@@ -42,6 +49,8 @@ export function NoteWindow({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -87,6 +96,18 @@ export function NoteWindow({
     }
   };
 
+  async function handleConfirmDelete() {
+    if (!deleteNote) return;
+    setDeleting(true);
+    try {
+      await deleteNote(workspaceId, noteId);
+      if (windowId) actions.close(windowId);
+      setPendingDelete(false);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -114,13 +135,32 @@ export function NoteWindow({
             be readable, and the window's own border is right there — text that
             runs up to it reads as cramped no matter how good the type is. */}
         <div className="mx-auto w-full max-w-[46rem] px-8 pb-20 pt-8 sm:px-12 lg:px-14">
-          <div className="flex items-center gap-2">
-            {workspaceName && (
-              <span className="text-[10px] font-semibold uppercase tracking-[0.09em] text-black/35 dark:text-[#EDE7DD]/35">
-                {workspaceName}
-              </span>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              {workspaceName && (
+                <span className="text-[10px] font-semibold uppercase tracking-[0.09em] text-black/35 dark:text-[#EDE7DD]/35">
+                  {workspaceName}
+                </span>
+              )}
+              {saving && <span className="text-[10px] font-medium text-black/25 dark:text-[#EDE7DD]/25">Saving…</span>}
+            </div>
+
+            {deleteNote && (
+              <button
+                type="button"
+                onClick={() => setPendingDelete(true)}
+                aria-label="Delete note"
+                title="Delete note"
+                className={cn(
+                  "flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] border border-black/15 text-[11px] font-semibold text-black/50 transition-all",
+                  "hover:bg-red-50 hover:text-red-600 hover:border-red-400",
+                  "dark:border-[#EDE7DD]/15 dark:text-[#EDE7DD]/50 dark:hover:bg-red-950/30 dark:hover:text-red-400 dark:hover:border-red-500/40",
+                )}
+              >
+                <Trash2 className="h-3 w-3" strokeWidth={2.5} />
+                <span>Delete note</span>
+              </button>
             )}
-            {saving && <span className="text-[10px] font-medium text-black/25 dark:text-[#EDE7DD]/25">Saving…</span>}
           </div>
 
           <input
@@ -148,6 +188,15 @@ export function NoteWindow({
           </div>
         </div>
       </div>
+
+      <OsConfirmDialog
+        open={pendingDelete}
+        title="Delete this note?"
+        body={`"${title || "Untitled"}" will be permanently deleted. This action cannot be undone.`}
+        confirmLabel={deleting ? "Deleting…" : "Delete note"}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDelete(false)}
+      />
     </div>
   );
 }

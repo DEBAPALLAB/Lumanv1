@@ -1,7 +1,14 @@
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { requireUser } from "@/lib/auth/session";
 import { getOrganizationBySlug, getUserOrganizations } from "@/lib/db/organizations";
-import { getTasksForWorkspaces, getWorkspaceTasks, upsertTasks } from "@/lib/db/tasks";
+import {
+  createTask,
+  deleteTask,
+  getTasksForWorkspaces,
+  getWorkspaceTasks,
+  updateTask,
+  upsertTasks,
+} from "@/lib/db/tasks";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
@@ -9,12 +16,51 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { tasks, workspaceId } = body;
 
+    // A single new task from GodMode's "New task" field, distinct from the
+    // note editor's batch todo-sync shape below.
+    if (!tasks && workspaceId && typeof body.content === "string") {
+      const data = await createTask({
+        content: body.content,
+        workspaceId,
+        dueDate: body.due_date ?? null,
+        assigneeId: body.assignee_id ?? null,
+      });
+      return apiSuccess(data, 201);
+    }
+
     if (!tasks || !Array.isArray(tasks) || !workspaceId) {
       return apiError("Invalid data", 400);
     }
 
     const data = await upsertTasks(tasks, workspaceId);
     return apiSuccess(data);
+  } catch (err) {
+    return apiError(err instanceof Error ? err.message : "Internal Error", 500);
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const body = await req.json();
+    const { id, is_completed, due_date, assignee_id, content } = body;
+
+    if (!id) return apiError("Task id is required", 400);
+
+    const data = await updateTask(id, { is_completed, due_date, assignee_id, content });
+    return apiSuccess(data);
+  } catch (err) {
+    return apiError(err instanceof Error ? err.message : "Internal Error", 500);
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+    if (!id) return apiError("Task id is required", 400);
+
+    await deleteTask(id);
+    return apiSuccess({ success: true });
   } catch (err) {
     return apiError(err instanceof Error ? err.message : "Internal Error", 500);
   }

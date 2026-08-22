@@ -14,6 +14,7 @@ import {
   Phone,
   Search,
   Settings,
+  Sparkles,
   StickyNote,
 } from "lucide-react";
 
@@ -42,7 +43,16 @@ export const KIND_ICON: Record<string, LucideIcon> = {
  * an object you placed, and burying eight of them in fixed furniture turns
  * them into a list you scan instead.
  */
-export function Dock({ onSpotlight }: { onSpotlight: () => void }) {
+export function Dock({
+  onSpotlight,
+  onVoiceAgent,
+  agentActive,
+}: {
+  onSpotlight: () => void;
+  onVoiceAgent: () => void;
+  /** Lit while the agent panel is up, so the button reads as a toggle. */
+  agentActive: boolean;
+}) {
   const desktop = useDesktop();
   const actions = useDesktopActions();
 
@@ -107,6 +117,11 @@ export function Dock({ onSpotlight }: { onSpotlight: () => void }) {
       {/* Spotlight sits at the top and is visually distinct — it is the one
           control that is about everything rather than about one app. */}
       <DockButton icon={Search} label="Search  ⌘K" onClick={onSpotlight} accent />
+
+      {/* Beside Search, above the divider: both are about the desktop as a
+          whole rather than about one app, and the agent is the spoken version
+          of the same errand the palette serves by typing. */}
+      <DockButton icon={Sparkles} label="Voice agent  ⌘J" onClick={onVoiceAgent} active={agentActive} />
 
       <div className="my-0.5 h-px w-7 bg-black/15 dark:bg-[#EDE7DD]/15" />
 

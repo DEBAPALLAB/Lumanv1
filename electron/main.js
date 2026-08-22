@@ -1,14 +1,4 @@
-const {
-  app,
-  BrowserWindow,
-  shell,
-  ipcMain,
-  dialog,
-  Menu,
-  Tray,
-  Notification,
-  desktopCapturer,
-} = require('electron');
+const { app, BrowserWindow, shell, ipcMain, dialog, Menu, Tray, Notification, desktopCapturer } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const http = require('node:http');
@@ -81,6 +71,12 @@ const DELEGATED_SECRET_KEYS = [
   'OPENROUTER_API_KEY',
   'OPENAI_API_KEY',
   'OPENAI_BASE_URL',
+  'GROQ_API_KEY',
+  'ELEVENLABS_API_KEY',
+  'ELEVENLABS_VOICE_ID',
+  'ELEVENLABS_VOICE_ID_EN',
+  'ELEVENLABS_VOICE_ID_HI',
+  'ELEVENLABS_VOICE_ID_MR',
   'BLOB_READ_WRITE_TOKEN',
   'KV_REST_API_URL',
   'KV_REST_API_TOKEN',
@@ -98,10 +94,7 @@ function parseEnvFile(filePath) {
       if (eq === -1) continue;
       const key = trimmed.slice(0, eq).trim();
       let value = trimmed.slice(eq + 1).trim();
-      if (
-        (value.startsWith('"') && value.endsWith('"')) ||
-        (value.startsWith("'") && value.endsWith("'"))
-      ) {
+      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
         value = value.slice(1, -1);
       }
       if (key) out[key] = value;
@@ -258,7 +251,12 @@ function startNextServer(port, serverPath) {
     if (!allowed.has(key)) delete childEnv[key];
   }
 
-  log.info('[config] backend origin:', runtimeConfig.SITE_URL, '| local secrets:', allowed.size - RUNTIME_CONFIG_KEYS.length);
+  log.info(
+    '[config] backend origin:',
+    runtimeConfig.SITE_URL,
+    '| local secrets:',
+    allowed.size - RUNTIME_CONFIG_KEYS.length,
+  );
 
   serverProcess = fork(serverPath, [], {
     cwd: standaloneRoot,
