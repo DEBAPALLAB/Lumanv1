@@ -1,22 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { 
-  Sparkles, 
-  Play, 
-  ArrowRight, 
-  CheckSquare, 
-  Square, 
-  Terminal, 
-  Lock, 
-  UploadCloud, 
-  Check, 
-  Calendar, 
-  ListTodo,
+import {
+  ArrowRight,
+  Calendar,
+  Check,
+  CheckSquare,
   Code,
-  FileText
+  FileText,
+  ListTodo,
+  Lock,
+  Play,
+  Sparkles,
+  Square,
+  Terminal,
+  UploadCloud,
 } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 export default function LandingPage() {
   // Task checklist state for interactive widget
@@ -33,18 +33,15 @@ export default function LandingPage() {
   const [isTyping, setIsTyping] = useState(false);
 
   const toggleTask = (id: number) => {
-    setTasks(
-      tasks.map((task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task
-      )
-    );
+    setTasks(tasks.map((task) => (task.id === id ? { ...task, completed: !task.completed } : task)));
   };
 
   const simulateAISummarize = () => {
     if (isTyping) return;
     setIsTyping(true);
     setAiResponse("");
-    const text = "Luman helps your team write clean documents, coordinate calendar timelines, and track action items in a single shared workspace. Focus on execution and keep everyone on the same page.";
+    const text =
+      "Luman helps your team write clean documents, coordinate calendar timelines, and track action items in a single shared workspace. Focus on execution and keep everyone on the same page.";
     let index = 0;
     const interval = setInterval(() => {
       if (index < text.length) {
@@ -67,27 +64,38 @@ export default function LandingPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-6 space-y-28 md:space-y-36">
-      
       {/* 1. HERO SECTION */}
       <section className="text-center space-y-8 relative py-8">
-        
         {/* Release Status Badge */}
         <div className="inline-flex items-center gap-2 bg-card border border-black rounded-sm px-4 py-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]">
           <span className="w-2 h-2 rounded-full bg-green-500 border border-black animate-pulse" />
-          <span className="text-xs font-black uppercase tracking-wider text-foreground">
-            Luman workspace is live
-          </span>
+          <span className="text-xs font-black uppercase tracking-wider text-foreground">Luman workspace is live</span>
         </div>
 
         {/* Headline */}
         <div className="space-y-4 max-w-4xl mx-auto">
           <h1 className="text-4xl sm:text-6xl md:text-7xl font-black uppercase tracking-tight text-foreground leading-[1.05]">
-            Organize your <span className="bg-accent text-accent-foreground px-3 inline-block transform -rotate-1 border border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">ideas</span>.
+            Organize your{" "}
+            <span className="bg-accent text-accent-foreground px-3 inline-block transform -rotate-1 border border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+              ideas
+            </span>
+            .
             <br />
-            Coordinate your <span className="bg-foreground text-background px-3 inline-block transform rotate-1">team</span>.
+            Coordinate your{" "}
+            <span className="bg-foreground text-background px-3 inline-block transform rotate-1">team</span>.
           </h1>
           <p className="text-sm sm:text-lg md:text-xl font-bold uppercase text-muted-foreground max-w-2xl mx-auto pt-4 leading-relaxed">
-            Luman is a beautifully structured team workspace. Write clear documents, schedule project timelines, and manage tasks side-by-side with a helpful AI writing partner.
+            Luman is a beautifully structured team workspace. Write clear documents, schedule project timelines, and
+            manage tasks side-by-side with a helpful AI writing partner.
+          </p>
+          {/* Plain, literal statement of what the app does and who it's for —
+              kept separate from the stylized copy above so it reads clearly
+              on its own, without uppercase styling or wordplay getting in
+              the way of a straightforward description. */}
+          <p className="mx-auto max-w-2xl pt-2 text-sm normal-case text-muted-foreground/90">
+            Luman is a web and desktop app that lets a team share documents, tasks, a calendar, group chat, and
+            whiteboards inside one private organization, with an optional AI assistant and voice agent to help you write
+            and navigate faster.
           </p>
         </div>
 
@@ -100,7 +108,7 @@ export default function LandingPage() {
             Create Your Workspace
             <ArrowRight className="h-5 w-5" />
           </Link>
-          
+
           <Link
             href="/features"
             className="w-full sm:w-auto px-8 py-4 text-base font-black uppercase border-2 border-black bg-background text-foreground shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[5px] hover:translate-y-[5px] transition-all flex items-center justify-center gap-2"
@@ -113,20 +121,16 @@ export default function LandingPage() {
       {/* 2. INTERACTIVE PRODUCT PREVIEW CARD */}
       <section className="space-y-6">
         <div className="text-center space-y-2">
-          <h2 className="text-2xl sm:text-4xl font-black uppercase text-foreground">
-            Experience Luman
-          </h2>
+          <h2 className="text-2xl sm:text-4xl font-black uppercase text-foreground">Experience Luman</h2>
           <p className="text-xs sm:text-sm font-bold uppercase text-muted-foreground">
             Click tasks to complete them, or type a prompt and ask the AI
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch pt-6">
-          
           {/* Left Block - Interactive Editor Mockup (7 Columns) */}
           <div className="lg:col-span-7 border-brutal-thick shadow-brutal-xl bg-card p-6 flex flex-col justify-between min-h-[450px]">
             <div className="space-y-6">
-              
               {/* Window Header */}
               <div className="flex items-center justify-between pb-4 border-b-2 border-black">
                 <div className="flex items-center gap-2">
@@ -141,11 +145,13 @@ export default function LandingPage() {
 
               {/* Editor Content */}
               <div className="space-y-4 font-mono text-sm">
-                <h3 className="text-lg font-black uppercase text-foreground">
-                  📝 Product Launch Strategy.md
-                </h3>
+                <h3 className="text-lg font-black uppercase text-foreground">📝 Product Launch Strategy.md</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  We are launching <span className="bg-[#fbf4a2] text-black px-1.5 py-0.5 border border-dashed border-yellow-600 font-bold">Luman</span> to bring teams a fast, beautiful workspace. Write, schedule, and execute seamlessly. 
+                  We are launching{" "}
+                  <span className="bg-[#fbf4a2] text-black px-1.5 py-0.5 border border-dashed border-yellow-600 font-bold">
+                    Luman
+                  </span>{" "}
+                  to bring teams a fast, beautiful workspace. Write, schedule, and execute seamlessly.
                 </p>
                 <div className="p-3 border border-black bg-muted/30 rounded-sm font-bold text-xs uppercase flex items-center gap-2">
                   <span className="px-1.5 py-0.5 bg-black text-white rounded-[3px]">/table</span>
@@ -164,7 +170,7 @@ export default function LandingPage() {
                 <Terminal className="h-3 w-3" />
                 AI Assistant
               </div>
-              
+
               <div className="space-y-3 pt-1">
                 <div className="flex gap-2">
                   <input
@@ -182,27 +188,27 @@ export default function LandingPage() {
                     {isTyping ? "Writing..." : "Ask AI"}
                   </button>
                 </div>
-                
+
                 <div className="min-h-[60px] bg-muted/50 border border-black p-3 text-xs font-semibold text-foreground leading-relaxed uppercase">
-                  {aiResponse ? aiResponse : <span className="text-muted-foreground animate-pulse">Click "Ask AI" to stream responses...</span>}
+                  {aiResponse ? (
+                    aiResponse
+                  ) : (
+                    <span className="text-muted-foreground animate-pulse">Click "Ask AI" to stream responses...</span>
+                  )}
                   {isTyping && <span className="inline-block w-1.5 h-3 bg-foreground ml-1 animate-ping" />}
                 </div>
               </div>
             </div>
-
           </div>
 
           {/* Right Block - Interactive Checklist & Calendar Dot Widget (5 Columns) */}
           <div className="lg:col-span-5 border-brutal-thick shadow-brutal-xl bg-card p-6 flex flex-col justify-between min-h-[450px]">
-            
             {/* Calendar Header Card */}
             <div className="space-y-6">
               <div className="flex items-center justify-between pb-4 border-b-2 border-black">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-5 w-5" />
-                  <span className="text-sm font-black uppercase tracking-wider text-foreground">
-                    Team Schedule
-                  </span>
+                  <span className="text-sm font-black uppercase tracking-wider text-foreground">Team Schedule</span>
                 </div>
                 <div className="px-2 py-0.5 bg-black text-white text-[9px] font-black rounded-sm">
                   {progressPercent}% Complete
@@ -212,7 +218,9 @@ export default function LandingPage() {
               {/* Simulated Calendar Grid */}
               <div className="grid grid-cols-7 gap-1 text-center font-bold text-[10px]">
                 {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
-                  <div key={i} className="text-muted-foreground py-1 font-black">{d}</div>
+                  <div key={i} className="text-muted-foreground py-1 font-black">
+                    {d}
+                  </div>
                 ))}
                 {Array.from({ length: 28 }).map((_, i) => {
                   const dayNum = i + 1;
@@ -245,7 +253,7 @@ export default function LandingPage() {
                   {completedCount} of {tasks.length} Done
                 </span>
               </div>
-              
+
               <div className="space-y-2">
                 {tasks.map((task) => (
                   <div
@@ -269,7 +277,6 @@ export default function LandingPage() {
                 ))}
               </div>
             </div>
-
           </div>
         </div>
       </section>
@@ -277,16 +284,14 @@ export default function LandingPage() {
       {/* 3. CORE BENEFITS SECTION */}
       <section className="space-y-12">
         <div className="text-center space-y-3 max-w-2xl mx-auto">
-          <h2 className="text-3xl sm:text-5xl font-black uppercase text-foreground">
-            EVERYTHING IN ONE PLACE
-          </h2>
+          <h2 className="text-3xl sm:text-5xl font-black uppercase text-foreground">EVERYTHING IN ONE PLACE</h2>
           <p className="text-sm font-bold uppercase text-muted-foreground">
-            Ditch scattered tabs. Luman brings your writing documents, schedules, and team assignments into a single visual environment.
+            Ditch scattered tabs. Luman brings your writing documents, schedules, and team assignments into a single
+            visual environment.
           </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 pt-6">
-          
           {/* Benefit 1 */}
           <div className="border-brutal-thick shadow-brutal bg-[#93C5FD] text-black p-8 space-y-4 hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all">
             <div className="p-3 border-2 border-black bg-white rounded-sm w-max">
@@ -294,7 +299,8 @@ export default function LandingPage() {
             </div>
             <h3 className="text-xl font-black uppercase">Smart Shortcuts</h3>
             <p className="text-xs font-semibold uppercase leading-relaxed text-black/80">
-              Add structured tables, checklist grids, or calendar sync dates instantly. Just press the "/" key as you type and select what you need.
+              Add structured tables, checklist grids, or calendar sync dates instantly. Just press the "/" key as you
+              type and select what you need.
             </p>
           </div>
 
@@ -305,7 +311,8 @@ export default function LandingPage() {
             </div>
             <h3 className="text-xl font-black uppercase">Safe Team Roles</h3>
             <p className="text-xs font-semibold uppercase leading-relaxed text-black/80">
-              Keep your sensitive plans and assets safe. Founders hold full administrative setup control, while team members can view or write without breaking folder directories.
+              Keep your sensitive plans and assets safe. Founders hold full administrative setup control, while team
+              members can view or write without breaking folder directories.
             </p>
           </div>
 
@@ -316,10 +323,10 @@ export default function LandingPage() {
             </div>
             <h3 className="text-xl font-black uppercase">Easy File Sharing</h3>
             <p className="text-xs font-semibold uppercase leading-relaxed text-black/80">
-              Drag and drop images, PDFs, and spreadsheets directly into your text editor. Files load immediately, giving everyone instant access.
+              Drag and drop images, PDFs, and spreadsheets directly into your text editor. Files load immediately,
+              giving everyone instant access.
             </p>
           </div>
-
         </div>
       </section>
 
@@ -329,13 +336,14 @@ export default function LandingPage() {
           <div className="absolute top-2 right-2 p-2 border border-black rounded-sm bg-background text-foreground transform rotate-12 text-xs font-black uppercase">
             ⚡ SPAWN ORG
           </div>
-          
+
           <div className="space-y-4 max-w-3xl mx-auto">
             <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black uppercase leading-none">
               READY TO SPAWN YOUR WORKSPACE?
             </h2>
             <p className="text-xs sm:text-sm font-bold uppercase max-w-xl mx-auto leading-relaxed">
-              Create a secure private home for your team's documents, projects, and calendar events. Set up in less than 60 seconds.
+              Create a secure private home for your team's documents, projects, and calendar events. Set up in less than
+              60 seconds.
             </p>
           </div>
 
@@ -346,7 +354,7 @@ export default function LandingPage() {
             >
               Get Started Free
             </Link>
-            
+
             <Link
               href="/org-login"
               className="w-full sm:w-auto px-8 py-4 text-sm font-black uppercase border-2 border-black bg-background text-foreground shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all"
@@ -356,7 +364,6 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
     </div>
   );
 }

@@ -3,14 +3,14 @@ import "@/styles/prosemirror.css";
 import "katex/dist/katex.min.css";
 import { GeistSans } from "geist/font/sans";
 
+import { DesktopTitlebar } from "@/components/desktop-titlebar";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import { DesktopTitlebar } from "@/components/desktop-titlebar";
 import Providers from "./providers";
 
-const title = "Luman - Notion-style WYSIWYG editor with AI-powered autocompletions";
+const title = "Luman";
 const description =
-  "Luman is a Notion-style WYSIWYG editor with AI-powered autocompletions. Built with Tiptap, OpenAI, and Vercel AI SDK.";
+  "Luman is a team workspace for organizations: shared documents with an AI writing assistant, task lists, a team calendar, group chat, whiteboards, and a voice agent, all in one place.";
 
 export const metadata: Metadata = {
   title,
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     description,
     card: "summary_large_image",
   },
-  keywords: ["Luman", "AI Editor", "Notion-style", "Wysiwyg", "Tiptap", "OpenAI"],
+  keywords: ["Luman", "team workspace", "shared documents", "task management", "team calendar", "AI assistant"],
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
 };
 
