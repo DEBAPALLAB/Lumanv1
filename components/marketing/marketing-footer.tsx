@@ -1,29 +1,26 @@
 "use client";
 
+import { Github, MessageSquare, Send, Sparkles, Twitter } from "lucide-react";
 import Link from "next/link";
-import { Sparkles, Send, Github, Twitter, MessageSquare } from "lucide-react";
 
 export default function MarketingFooter() {
   return (
     <footer className="border-t-4 border-foreground bg-card text-card-foreground mt-20">
       <div className="max-w-6xl mx-auto px-6 py-16 md:py-24">
-
         {/* Footer Top Grid */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-8">
-
           {/* Brand Info & Newsletter */}
           <div className="col-span-1 md:col-span-5 space-y-6">
             <Link href="/" className="flex items-center gap-2 group w-max">
               <div className="p-1.5 border border-black bg-accent text-accent-foreground rounded-sm">
                 <Sparkles className="h-5 w-5" />
               </div>
-              <span className="text-xl font-black uppercase tracking-tight text-foreground">
-                luman
-              </span>
+              <span className="text-xl font-black uppercase tracking-tight text-foreground">luman</span>
             </Link>
 
             <p className="text-sm font-bold uppercase leading-relaxed max-w-sm text-muted-foreground">
-              A premium, high-contrast rich-text workspace developed by Lucide Tech. Organize thoughts, schedule calendars, and build databases under one single roof.
+              A premium, high-contrast rich-text workspace developed by Lucide Tech. Organize thoughts, schedule
+              calendars, and build databases under one single roof.
             </p>
 
             {/* Newsletter Subscription Box */}
@@ -54,7 +51,6 @@ export default function MarketingFooter() {
 
           {/* Nav Maps */}
           <div className="col-span-1 md:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-8">
-
             {/* Product Column */}
             <div className="space-y-4">
               <h3 className="text-sm font-black uppercase tracking-wider text-foreground pb-2 border-b-2 border-black w-max">
@@ -109,9 +105,18 @@ export default function MarketingFooter() {
                     About Luman
                   </Link>
                 </li>
+                <li>
+                  <Link href="/privacy" className="hover:text-foreground hover:underline transition-all">
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/terms" className="hover:text-foreground hover:underline transition-all">
+                    Terms of Service
+                  </Link>
+                </li>
               </ul>
             </div>
-
           </div>
         </div>
 
@@ -150,7 +155,6 @@ export default function MarketingFooter() {
             </a>
           </div>
         </div>
-
       </div>
     </footer>
   );
