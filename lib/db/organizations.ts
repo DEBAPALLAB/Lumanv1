@@ -112,6 +112,16 @@ export async function createOrganization(
   const admin = getAdminClient();
   const supabase = admin ?? (await createSupabaseServerClient());
 
+  // Unlike slug (auto-suffixed below), name has to actually be what the
+  // caller typed — silently renaming their org to "Mindspace-1" would be
+  // more confusing than telling them the name is taken. Checked up front so
+  // a collision surfaces as a clear message instead of a raw Postgres
+  // "duplicate key value violates unique constraint organizations_name_key".
+  const { data: existingByName } = await supabase.from("organizations").select("id").eq("name", name).maybeSingle();
+  if (existingByName) {
+    throw new Error(`An organization named "${name}" already exists`);
+  }
+
   let slug = generateSlug(name);
 
   // Generate a 6-character alphanumeric invitation code
@@ -136,7 +146,16 @@ export async function createOrganization(
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    // Belt-and-suspenders against the check-then-insert race above (two
+    // concurrent requests for the same name, both passing the check before
+    // either commits) — same duplicate-name outcome, still a clear message
+    // instead of a raw constraint-violation string.
+    if ((error as { code?: string }).code === "23505") {
+      throw new Error(`An organization named "${name}" already exists`);
+    }
+    throw error;
+  }
 
   // If custom hierarchy, create the custom roles
   if (hierarchyType === "custom" && customRoles && customRoles.length > 0) {

@@ -51,6 +51,8 @@ export async function POST(req: NextRequest) {
       201,
     );
   } catch (error) {
-    return apiError("Failed to create organization", 500);
+    const message = error instanceof Error ? error.message : "Failed to create organization";
+    const isNameCollision = message.includes("already exists");
+    return apiError(message, isNameCollision ? 409 : 500);
   }
 }

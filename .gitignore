@@ -78,3 +78,6 @@ logs/
 /playwright/.cache/
 
 .vercel
+
+# supabase CLI local cache
+supabase/.temp/
